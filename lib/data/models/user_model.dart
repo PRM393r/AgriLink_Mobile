@@ -17,13 +17,19 @@ class UserModel {
     required this.status,
   });
 
+  bool get isFarmer => role == 'farmer';
+  bool get isSupplier => role == 'supplier';
+  bool get isCustomer => role == 'customer';
+
+  bool get isValidRole => isFarmer || isSupplier || isCustomer;
+
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
       id: json['id'] as String? ?? '',
       fullName: json['fullName'] as String? ?? '',
       phone: json['phone'] as String? ?? '',
       email: json['email'] as String?,
-      role: json['role'] as String? ?? 'farmer',
+      role: json['role'] as String? ?? 'customer',
       avatarUrl: json['avatarUrl'] as String?,
       status: json['status'] as String? ?? 'active',
     );

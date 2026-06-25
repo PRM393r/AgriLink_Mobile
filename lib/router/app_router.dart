@@ -4,6 +4,10 @@ import '../screens/auth/login_screen.dart';
 import '../screens/auth/otp_screen.dart';
 import '../screens/auth/role_picker_screen.dart';
 import '../screens/home/home_screen.dart';
+import '../screens/cart/cart_screen.dart';
+import '../screens/dashboard/customer/customer_dashboard_screen.dart';
+import '../screens/marketplace/marketplace_screen.dart';
+import '../screens/marketplace/product_detail_screen.dart';
 
 class AppRouter {
   const AppRouter._();
@@ -13,6 +17,10 @@ class AppRouter {
   static const String otp = '/otp';
   static const String rolePicker = '/role-picker';
   static const String home = '/home';
+  static const String cart = '/cart';
+  static const String customer = '/customer';
+  static const String marketplace = '/marketplace';
+  static const String productDetail = '/product-detail';
 
   static Route<dynamic>? onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -26,6 +34,14 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const RolePickerScreen());
       case home:
         return MaterialPageRoute(builder: (_) => const HomeScreen());
+      case cart:
+        return MaterialPageRoute(builder: (_) => const CartScreen());
+      case customer:
+        return MaterialPageRoute(builder: (_) => const CustomerDashboardScreen());
+      case marketplace:
+        return MaterialPageRoute(builder: (_) => const MarketplaceScreen());
+      case productDetail:
+        return MaterialPageRoute(builder: (_) => const ProductDetailScreen());
       default:
         return MaterialPageRoute(
           builder: (_) => Scaffold(
@@ -37,3 +53,4 @@ class AppRouter {
     }
   }
 }
+

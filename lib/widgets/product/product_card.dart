@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../data/models/product_model.dart';
+import '../../data/services/auth_provider.dart';
+import '../../data/providers/cart_provider.dart';
 import '../common/agri_card.dart';
 import 'product_badge.dart';
 
@@ -18,6 +21,8 @@ class ProductCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasImage = product.images.isNotEmpty;
+    final authProvider = Provider.of<AuthProvider>(context);
+    final isCustomer = (authProvider.currentUser?.role ?? 'customer') == 'customer';
 
     return AgriCard(
       margin: EdgeInsets.zero,
@@ -90,18 +95,39 @@ class ProductCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Expanded(
-                      child: Text(
-                        '${product.pricePerUnit.toStringAsFixed(0)}đ',
-                        style: AppTextStyles.body.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.accentActive,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${product.pricePerUnit.toStringAsFixed(0)}đ',
+                            style: AppTextStyles.body.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.accentActive,
+                            ),
+                          ),
+                          Text(
+                            '/${product.unit}',
+                            style: AppTextStyles.caption.copyWith(color: AppColors.body),
+                          ),
+                        ],
                       ),
                     ),
-                    Text(
-                      '/${product.unit}',
-                      style: AppTextStyles.caption.copyWith(color: AppColors.body),
-                    ),
+                    if (isCustomer)
+                      IconButton(
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        icon: const Icon(Icons.add_shopping_cart, color: AppColors.primary),
+                        onPressed: () {
+                          Provider.of<CartProvider>(context, listen: false).addItem(product, 1);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Đã thêm ${product.name} vào giỏ hàng!'),
+                              duration: const Duration(seconds: 1),
+                              backgroundColor: AppColors.primary,
+                            ),
+                          );
+                        },
+                      ),
                   ],
                 ),
               ],
@@ -125,3 +151,4 @@ class ProductCard extends StatelessWidget {
     );
   }
 }
+

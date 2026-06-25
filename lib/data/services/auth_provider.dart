@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import '../../core/utils/token_storage.dart';
 import '../../core/utils/phone_formatter.dart';
 import '../models/user_model.dart';
@@ -83,6 +84,16 @@ class AuthProvider extends ChangeNotifier {
   Future<void> sendOtp(String phone, {required VoidCallback onSuccess, required Function(String) onError}) async {
     _setLoading(true);
     _phoneNumber = PhoneFormatter.formatToE164(phone);
+
+    // If running on web, use mock OTP auth directly to bypass Firebase Web recaptcha/region restrictions.
+    if (kIsWeb) {
+      debugPrint("Running on Web: Bypassing real Firebase SMS to use mock OTP auth.");
+      await Future.delayed(const Duration(milliseconds: 600));
+      _verificationId = "mock_verification_id";
+      _setLoading(false);
+      onSuccess();
+      return;
+    }
 
     try {
       await _authService.sendOtp(

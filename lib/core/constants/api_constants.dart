@@ -12,6 +12,7 @@ class ApiConstants {
 
   static String get baseUrl => 'http://$_host:5000/api/v1';
   static String get wsUrl => 'http://$_host:5000/notifications';
+  static const bool enableNotificationSocket = false;
 
   // Auth Endpoints
   static const String sendOtp = '/auth/send-otp';

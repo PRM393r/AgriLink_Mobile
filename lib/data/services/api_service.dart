@@ -23,7 +23,7 @@ class ApiService {
       InterceptorsWrapper(
         onRequest: (options, handler) async {
           final token = await TokenStorage.getToken();
-          if (token != null) {
+          if (token != null && options.headers['Authorization'] == null) {
             options.headers['Authorization'] = 'Bearer $token';
           }
           return handler.next(options);
@@ -63,6 +63,38 @@ class ApiService {
   }
 
   Dio get client => _dio;
+
+  /// Syncs a Firebase-authenticated mobile user with the NestJS backend.
+  ///
+  /// Real backend response is wrapped by ResponseInterceptor:
+  /// { statusCode, message, data: { accessToken }, timestamp }
+  Future<String> syncUser(String idToken) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        ApiConstants.syncUser,
+        options: Options(headers: {'Authorization': 'Bearer $idToken'}),
+      );
+
+      final envelope = response.data;
+      final data = envelope?['data'];
+      if (data is Map<String, dynamic>) {
+        final accessToken = data['accessToken'] as String? ?? '';
+        if (accessToken.isNotEmpty) {
+          await TokenStorage.saveToken(accessToken);
+          return accessToken;
+        }
+      }
+
+      throw Exception('Định dạng phản hồi đồng bộ tài khoản không hợp lệ');
+    } on DioException {
+      rethrow;
+    } catch (e) {
+      throw DioException(
+        requestOptions: RequestOptions(path: ApiConstants.syncUser),
+        error: e.toString(),
+      );
+    }
+  }
 
   // Generic helpers for REST API calls
 

@@ -9,15 +9,21 @@ import '../../core/utils/token_storage.dart';
 class NotificationService {
   final ApiService _apiService;
   io.Socket? _socket;
-  
+
   // Stream controller to broadcast new real-time notifications to the UI
-  final _notificationStreamController = StreamController<NotificationModel>.broadcast();
-  Stream<NotificationModel> get newNotifications => _notificationStreamController.stream;
+  final _notificationStreamController =
+      StreamController<NotificationModel>.broadcast();
+  Stream<NotificationModel> get newNotifications =>
+      _notificationStreamController.stream;
 
   NotificationService(this._apiService);
 
   /// Initializes the WebSockets connection to the NestJS gateway.
   void initializeSocket() async {
+    if (!ApiConstants.enableNotificationSocket) {
+      return;
+    }
+
     try {
       final token = await TokenStorage.getToken();
       if (token == null) return;
@@ -68,7 +74,12 @@ class NotificationService {
       final data = response.data;
       if (data is Map<String, dynamic> && data['data'] is List) {
         final list = data['data'] as List;
-        return list.map((json) => NotificationModel.fromJson(json as Map<String, dynamic>)).toList();
+        return list
+            .map(
+              (json) =>
+                  NotificationModel.fromJson(json as Map<String, dynamic>),
+            )
+            .toList();
       }
       return [];
     } on DioException catch (e) {
@@ -95,7 +106,9 @@ class NotificationService {
   /// Marks a specific notification as read.
   Future<void> markAsRead(String notificationId) async {
     try {
-      await _apiService.patch('${ApiConstants.notificationsRead}/$notificationId/read');
+      await _apiService.patch(
+        '${ApiConstants.notificationsRead}/$notificationId/read',
+      );
     } on DioException catch (e) {
       throw Exception(e.error ?? 'Đánh dấu đã đọc thất bại');
     } catch (e) {

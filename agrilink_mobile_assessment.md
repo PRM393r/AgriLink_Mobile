@@ -1,239 +1,198 @@
-# 🌿 Đánh giá tổng quan hệ thống AgriLink Mobile
+# AgriLink Mobile - Đánh giá hiện trạng dự án
 
-> Đánh giá tại thời điểm: **02/07/2026**
-> Branch hiện tại: `codex/mobile-firebase-auth-sync` (trên `develop`)
+> Cập nhật: 03/07/2026  
+> Mục tiêu tài liệu: chuẩn hóa hiện trạng để chia việc nhóm, tránh phân công lệch so với code thật.
 
 ---
 
-## 1. Kiến trúc tổng thể
+## 1. Kết luận nhanh
+
+AgriLink Mobile hiện đang ở mức **MVP sớm, khoảng 35-40% hoàn thành**.
+
+Phần đã tốt nhất là nền tảng app: auth Firebase + backend JWT, routing, theme, reusable widgets, marketplace, product detail và cart local. Phần còn thiếu lớn nhất là **business flow thương mại thật**: checkout, order, payment, order history và trạng thái đơn hàng.
+
+Ưu tiên dự án trong 2 tuần tới nên là:
+
+1. Checkout + Order flow
+2. Product CRUD + upload ảnh
+3. Profile edit + refresh token
+4. Notifications UI + market prices
+5. Traceability QR nếu còn thời gian
+
+Các module nâng cao như Ads, Cooperative, Chat, Gamification nên để sau MVP.
+
+---
+
+## 2. Quyết định role system
+
+### Role đang có trong mobile hiện tại
+
+Code mobile hiện đang dùng:
+
+| Role | Ý nghĩa | Trạng thái |
+|------|---------|------------|
+| `farmer` | Nông dân / người bán nông sản | Đang dùng |
+| `supplier` | Nhà cung cấp vật tư | Đang dùng |
+| `customer` / `buyer` | Người mua | Đang dùng |
+
+Các file liên quan:
+
+- `lib/data/models/user_model.dart`
+- `lib/screens/auth/role_picker_screen.dart`
+- `lib/screens/home/home_screen.dart`
+- `lib/screens/dashboard/farmer/*`
+- `lib/screens/dashboard/supplier/*`
+- `lib/screens/dashboard/customer/*`
+
+### Khuyến nghị
+
+**Giữ `farmer / supplier / customer` cho MVP hiện tại.**
+
+Lý do:
+
+- Code hiện tại đã tổ chức theo 3 role này.
+- Backend hiện đang map customer-side thành `buyer`.
+- Marketplace, cart và dashboard customer đang đi theo mô hình người mua.
+- Đổi sang `farmer / agent / expert` sẽ là breaking change lớn và làm chậm team.
+
+Nếu giảng viên hoặc master prompt bắt buộc dùng `agent / expert`, hãy tạo riêng task **Role Migration** và làm trước mọi feature khác. Không nên vừa đổi role vừa làm checkout/product/order vì dễ conflict và gãy flow.
+
+---
+
+## 3. Kiến trúc hiện tại
 
 ```mermaid
 graph TD
-    subgraph Flutter Mobile
-        A[main.dart] --> B[MultiProvider]
-        B --> C[AuthProvider]
-        B --> D[CartProvider]
-        A --> E[AppRouter]
-        E --> F["Screens (8 modules)"]
-        F --> G["Data Layer"]
-        G --> H[ApiService - Dio]
-        G --> I[Repositories]
-        G --> J[Services]
-        G --> K["Models (6)"]
-    end
-
-    subgraph Backend NestJS
-        L["/api/v1/*"]
-        M["Firebase Admin SDK"]
-    end
-
-    H -->|REST API| L
-    C -->|Firebase Auth| M
+    A[main.dart] --> B[MultiProvider]
+    B --> C[AuthProvider]
+    B --> D[CartProvider]
+    A --> E[AppRouter]
+    E --> F[Screens]
+    F --> G[Data Layer]
+    G --> H[ApiService - Dio]
+    G --> I[Repositories]
+    G --> J[Services]
+    H --> K[NestJS /api/v1]
+    C --> L[Firebase Auth]
 ```
 
-### Cấu trúc thư mục
+| Layer | Thư mục | Vai trò |
+|-------|---------|--------|
+| Core | `lib/core/` | Constants, theme, utils |
+| Data | `lib/data/models/` | Model dữ liệu |
+| Data | `lib/data/repositories/` | Repository gọi API theo domain |
+| Data | `lib/data/services/` | ApiService, Auth, Firebase, Notification |
+| State | `lib/data/providers/` | Provider như CartProvider |
+| UI | `lib/screens/` | Màn hình |
+| Widgets | `lib/widgets/` | Component tái sử dụng |
+| Router | `lib/router/app_router.dart` | Named routes |
 
-| Layer | Thư mục | Mô tả |
-|-------|---------|-------|
-| **Core** | `lib/core/constants/` | API endpoints, colors, strings, text styles |
-| | `lib/core/theme/` | Material theme (light) |
-| | `lib/core/utils/` | Token storage (SecureStorage), phone formatter |
-| **Data** | `lib/data/models/` | 6 models: User, Product, CartItem, BulkListing, CooperativeMember, Notification |
-| | `lib/data/providers/` | CartProvider (ChangeNotifier) |
-| | `lib/data/repositories/` | AuthRepository, ProductRepository |
-| | `lib/data/services/` | ApiService (Dio), AuthService (Firebase), AuthProvider, NotificationService, ProductService |
-| **UI** | `lib/screens/` | 8 module screens |
-| | `lib/widgets/` | Reusable widgets (auth, common, product) |
-| **Routing** | `lib/router/` | Named-route generator |
-
-> [!NOTE]
-> Kiến trúc tuân theo mô hình **Provider + Repository** pattern, phổ biến trong Flutter cho dự án cỡ vừa. Phân tách rõ Data ↔ UI ↔ Business Logic.
+Kiến trúc đủ dùng cho MVP. Chưa cần đổi sang Bloc/Riverpod trong giai đoạn này vì sẽ tăng chi phí refactor.
 
 ---
 
-## 2. Trạng thái từng module
+## 4. Trạng thái module
 
-### ✅ Hoàn thành / Hoạt động được
+### Đã chạy được
 
-| Module | Trạng thái | Chi tiết |
-|--------|-----------|----------|
-| **Splash Screen** | ✅ Done | Auto-check token → redirect login/home |
-| **Auth – Login** | ✅ Done | Nhập SĐT → gửi OTP Firebase |
-| **Auth – OTP** | ✅ Done | Xác minh OTP → sync với BE (`POST /auth/sync`) → lưu JWT |
-| **Auth – Role Picker** | ✅ Done | Chọn role (Farmer / Supplier / Customer) → `PUT /users/me/role` |
-| **Auth – Mock fallback** | ✅ Done | Khi Firebase lỗi hoặc chạy trên Web → auto mock OTP |
-| **Home Screen** | ✅ Done | Bottom nav 4 tabs, phân luồng theo role |
-| **Profile Tab** | ✅ Done | Hiện thông tin user, role badge, nút đăng xuất |
-| **Cart System** | ✅ Done | Add/remove/update quantity, tính tổng tiền (local state) |
-| **Marketplace** | ✅ Done | Danh sách sản phẩm, filter category, tìm kiếm |
-| **Product Detail** | ✅ Done | Xem chi tiết + thêm vào giỏ |
-| **Product Card/Badge** | ✅ Done | Reusable widget hiện sản phẩm |
+| Module | Trạng thái | Ghi chú |
+|--------|------------|--------|
+| Splash | Hoạt động | Check token rồi redirect |
+| Login OTP | Hoạt động | Firebase Phone Auth, có mock fallback |
+| OTP Verify | Hoạt động | Firebase ID token -> BE `/auth/sync` |
+| JWT storage | Hoạt động | `flutter_secure_storage` |
+| Role Picker | Hoạt động | `PUT /users/me/role` |
+| Home navigation | Hoạt động | Theo role |
+| Marketplace | Hoạt động | Có gọi product API |
+| Product detail | Hoạt động | Có thêm vào giỏ |
+| Cart local | Hoạt động | Chưa sync BE |
 
-### ⚠️ Có UI nhưng chưa kết nối BE thực / Dùng dữ liệu mock
+### Có UI nhưng còn mock / chưa hoàn thiện
 
-| Module | Trạng thái | Chi tiết |
-|--------|-----------|----------|
-| **Farmer Dashboard** | ⚠️ Mock | Có UI đẹp (stat cards, biểu đồ), nhưng data hardcode |
-| **Supplier Dashboard** | ⚠️ Mock | Tương tự Farmer, chưa gọi API thực |
-| **Customer Dashboard** | ⚠️ Mock | Có recommended products, categories, nhưng data tĩnh |
-| **Orders Tab** | ⚠️ Mock | Hardcode 2 đơn hàng mẫu (`ORD-2201`, `ORD-2202`) |
-| **Prices Screen** | ⚠️ Mock | UI bảng giá nông sản – data cứng |
-| **Trace Screen** | ⚠️ Mock | UI truy xuất nguồn gốc – data cứng |
-| **Bulk Listing** | ⚠️ Mock | Form tạo bán sỉ – chưa gọi API |
-| **Add Product** | ⚠️ Mock | Form đăng sản phẩm – chưa test với BE thật |
+| Module | Trạng thái | Ghi chú |
+|--------|------------|--------|
+| Farmer dashboard | Mock | Data hardcode |
+| Supplier dashboard | Mock | Data hardcode |
+| Customer dashboard | Mock | Recommended/category tĩnh |
+| Orders tab | Mock | Chưa có order flow thật |
+| Prices screen | Mock | Cần gọi `/market-prices` |
+| Trace screen | Mock | Cần gọi `/trace/*` |
+| Bulk listing | Mock | Chưa có service/repository |
+| Add product | Chưa đủ | Form có nhưng upload/API cần hoàn thiện |
 
-### ❌ Chưa triển khai
+### Chưa có hoặc thiếu nặng
 
-| Module | Trạng thái | Chi tiết |
-|--------|-----------|----------|
-| **Notifications UI** | ❌ Missing | Service có nhưng không có màn hình hiển thị |
-| **WebSocket Gateway** | ❌ Disabled | BE chưa có `@WebSocketGateway`, mobile đã tắt flag |
-| **Order Management** | ❌ Missing | Không có API order, checkout flow |
-| **Payment Integration** | ❌ Missing | BE có VNPay nhưng mobile chưa tích hợp |
-| **User Profile Edit** | ❌ Missing | Chỉ có xem, chưa cho sửa tên/avatar |
-| **Search Advanced** | ❌ Missing | Chưa có filter giá, khoảng cách, đánh giá |
-| **Chat / Messaging** | ❌ Missing | Không có module chat |
-| **Push Notifications** | ❌ Missing | Chưa tích hợp FCM push |
-
----
-
-## 3. Backend Integration (Mobile ↔ NestJS)
-
-### Các API đã kết nối thực
-
-| Endpoint | Method | Mobile sử dụng? | Ghi chú |
-|----------|--------|-----------------|---------|
-| `/auth/sync` | POST | ✅ Real | Firebase ID token → JWT |
-| `/users/me` | GET | ✅ Real | Lấy profile sau login |
-| `/users/me/role` | PUT | ✅ Real | Cập nhật role |
-| `/products` | GET | ✅ Real | Danh sách sản phẩm |
-| `/products/:id` | GET | ✅ Real | Chi tiết sản phẩm |
-| `/products` | POST | 🔶 Code có | Tạo sản phẩm (form có, chưa test kỹ) |
-| `/products/categories` | GET | 🔶 Code có | Fallback hardcode nếu lỗi |
-
-### Các API có endpoint trong constants nhưng chưa gọi từ UI
-
-| Endpoint | Ghi chú |
-|----------|---------|
-| `/notifications/unread` | Service có, UI chưa có |
-| `/notifications/count` | Service có, UI chưa có |
-| `/notifications/:id/read` | Service có, UI chưa có |
-| `/notifications/mark-all-read` | Service có, UI chưa có |
-| `/cooperatives/bulk-listings` | Constant có, chưa có repository |
-| `/cooperatives/me/members` | Constant có, chưa gọi |
-| `/cooperatives/harvest-schedules` | Constant có, chưa gọi |
-
-### Các API của BE mà mobile chưa biết đến
-
-| BE Feature | Ghi chú |
-|------------|---------|
-| Orders / Checkout | BE có module Orders, mobile chưa có |
-| VNPay Payment | BE có tích hợp, mobile chưa có |
-| Wishlist | BE có, mobile chưa có |
-| Gamification (XP) | BE có, mobile chưa có |
-| Reviews / Ratings | BE có, mobile chưa có |
+| Module | Mức độ thiếu | Ghi chú |
+|--------|--------------|--------|
+| Checkout | Rất cao | Core MVP chưa có |
+| Order history/detail | Rất cao | Core MVP chưa có |
+| Payment | Cao | BE có payment nhưng mobile chưa nối |
+| Notification UI | Cao | Có service, chưa có màn |
+| Profile edit | Trung bình | Profile hiện còn tĩnh |
+| Image upload | Trung bình | Cần storage service + picker |
+| Wishlist | Trung bình | BE có, mobile chưa có UI |
+| Reviews | Trung bình | BE có, mobile chưa có UI |
+| QR scan | Trung bình | Chưa tích hợp scanner |
+| Push notification | Thấp cho MVP | Để sau |
+| Chat | Thấp cho MVP | Để sau |
 
 ---
 
-## 4. Code Quality
+## 5. Backend integration
 
-### Điểm tốt ✅
+### API mobile đang dùng thật
 
-- **Phân tách layers rõ ràng**: Model → Repository → Service → Provider → Screen
-- **Dio interceptor**: Auto-inject Bearer token, standardize error messages
-- **Token storage**: Dùng `flutter_secure_storage` – an toàn
-- **Mock fallback**: Auth có fallback mock khi Firebase lỗi – tốt cho dev
-- **Role-based navigation**: Bottom nav thay đổi theo role – UX tốt
-- **Reusable widgets**: AgriButton, AgriCard, AgriTextField, ProductCard, LoadingOverlay, EmptyState
+| API | Method | Trạng thái |
+|-----|--------|------------|
+| `/auth/sync` | POST | Đang dùng |
+| `/users/me` | GET | Đang dùng |
+| `/users/me/role` | PUT | Đang dùng |
+| `/products` | GET | Đang dùng |
+| `/products/:id` | GET | Đang dùng |
+| `/products/categories` | GET | Có fallback |
 
-### Cần cải thiện ⚠️
+### API có sẵn nên ưu tiên nối tiếp
 
-| Vấn đề | Mức độ | Chi tiết |
-|--------|--------|----------|
-| **Không có unit test** | 🔴 Cao | Chỉ có 1 file widget_test.dart mặc định, chưa viết test nào |
-| **AuthProvider nằm trong services/** | 🟡 Trung bình | Nên nằm trong `providers/` cho đúng convention |
-| **Cart chỉ local** | 🟡 Trung bình | Mất khi đóng app, chưa đồng bộ BE |
-| **Hardcode "Người dùng thử nghiệm"** | 🟡 Nhỏ | Profile tab hardcode tên thay vì dùng `currentUser.fullName` |
-| **Không có error boundary** | 🟡 Trung bình | Lỗi API chưa hiện toast/snackbar thống nhất |
-| **Không có image picker/upload** | 🟡 Trung bình | Add product form có trường ảnh nhưng không upload thật |
-| **Không pagination** | 🟡 Trung bình | Products list load hết 1 lần |
-
----
-
-## 5. Git & Branching
-
-```
-main ← develop ← feature branches
-                   ├── feature/auth-bypass (merged)
-                   ├── feature/role-simplification (merged)
-                   ├── feature/cart-system (merged)
-                   └── codex/mobile-firebase-auth-sync (current, PR #2)
-```
-
-**Commit history** (9 commits):
-1. `78dbec6` Initial commit of baseline codebase
-2. `0158975` feat(auth): add mock OTP bypass for Flutter Web
-3. `e3b7318` feat(role): simplify to 3 roles
-4. `228bdad` feat(cart): add cart system
-5. `26e60aa` Merge branch 'feature/role-simplification' into develop
-6. `c2253c8` Merge branch 'feature/cart-system' into develop
-7. `293287a` chore(android): allow non-ASCII project path
-8. `c4e1f8a` feat(auth): sync Firebase login with backend
-9. `5f4eada` fix(notifications): disable socket without gateway
+| API group | Lý do |
+|----------|-------|
+| Orders / Checkout | Core flow mua hàng |
+| Payment | Demo thương mại hoàn chỉnh |
+| Product images / Storage | Cần cho farmer/supplier đăng sản phẩm |
+| Notifications | Tạo cảm giác app thật |
+| Wishlist | Dễ demo, liên quan product |
+| Reviews | Tăng độ hoàn thiện product detail |
+| Market prices | Tốt cho dashboard |
+| Traceability | Tốt nếu có thời gian |
 
 ---
 
-## 6. Đánh giá giai đoạn
+## 6. Rủi ro kỹ thuật
+
+| Rủi ro | Mức độ | Cách xử lý |
+|--------|--------|-----------|
+| Đổi role system giữa sprint | Cao | Chỉ làm nếu bắt buộc, làm branch riêng trước |
+| Checkout/order chưa có | Cao | Giao riêng 1 thành viên làm core flow |
+| Cart chỉ local | Trung bình | MVP có thể chấp nhận, nhưng cần order tạo từ cart |
+| Socket notification 404 | Trung bình | Đã tắt socket flag; dùng REST trước |
+| Image upload chưa có | Trung bình | TV1/TV2 phối hợp tạo StorageService |
+| Không có test | Trung bình | Ít nhất thêm smoke/unit test cho provider/service quan trọng |
+| API constants dễ conflict | Trung bình | Mỗi PR thêm constants theo section riêng |
+
+---
+
+## 7. Đánh giá cuối
+
+Mobile đã có nền khá tốt để chia việc song song. Tuy nhiên kế hoạch nên tập trung vào **MVP thương mại** trước:
 
 ```mermaid
-pie title Tiến độ tổng thể
-    "✅ Hoàn thành" : 35
-    "⚠️ Mock / Cần hoàn thiện" : 30
-    "❌ Chưa triển khai" : 35
+flowchart LR
+    A[Auth] --> B[Marketplace]
+    B --> C[Product detail]
+    C --> D[Cart]
+    D --> E[Checkout]
+    E --> F[Order]
+    F --> G[Payment / Mock payment]
 ```
 
-### Tổng kết: **Giai đoạn MVP sớm (~35% hoàn thành)**
+Nếu demo được flow trên, dự án sẽ thuyết phục hơn nhiều so với việc có nhiều module phụ nhưng không có mua hàng thật.
 
-| Khía cạnh | Đánh giá |
-|-----------|----------|
-| **Auth flow** | 🟢 Tốt – Đã hoạt động end-to-end với Firebase + BE JWT |
-| **UI/UX** | 🟡 Khá – Có design system, nhưng nhiều màn hình dùng data mock |
-| **BE integration** | 🟡 Trung bình – Chỉ Auth + Products thực sự kết nối |
-| **Business logic** | 🔴 Sớm – Chưa có Order, Payment, Chat, Notification UI |
-| **Testing** | 🔴 Chưa có – 0 unit test / integration test |
-| **Production-ready** | 🔴 Chưa – Cần thêm nhiều module core |
-
----
-
-## 7. Đề xuất các bước tiếp theo (ưu tiên)
-
-### Phase 1: Hoàn thiện core flow (Ưu tiên cao)
-1. **Order & Checkout flow** – Tạo đơn hàng từ giỏ hàng → thanh toán
-2. **VNPay Integration** – Tích hợp payment gateway trên mobile (BE đã có)
-3. **Notification UI** – Tạo màn hình notifications, badge count trên bell icon
-4. **Cart sync với BE** – Persist cart lên server thay vì chỉ local
-
-### Phase 2: Nâng cấp UX (Ưu tiên trung bình)
-5. **Dashboard real data** – Kết nối API thực cho Farmer/Supplier/Customer dashboard
-6. **Profile edit** – Sửa tên, avatar, thông tin cá nhân
-7. **Image upload** – Camera/Gallery picker cho product images
-8. **Pagination** – Infinite scroll cho product list
-
-### Phase 3: Features nâng cao (Ưu tiên thấp hơn)
-9. **Push Notification** – FCM integration
-10. **Chat / Messaging** – Giữa buyer ↔ seller
-11. **Traceability real data** – QR scan, batch tracking
-12. **Gamification UI** – Hiển thị XP, achievements
-13. **Reviews & Ratings** – Đánh giá sản phẩm/seller
-
-### Phase 4: Quality & Release
-14. **Unit tests** – Ít nhất cho Auth, Cart, API service
-15. **Widget tests** – Cho các screen chính
-16. **Integration tests** – E2E flow login → order → payment
-17. **CI/CD** – GitHub Actions cho Flutter analyze + test
-18. **Performance** – Lazy loading images, caching
-
----
-
-> [!IMPORTANT]
-> **Ưu tiên #1 hiện tại**: Order + Payment flow, vì đây là core business logic mà app thương mại điện tử nông sản cần có để demo được end-to-end.

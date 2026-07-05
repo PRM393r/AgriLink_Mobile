@@ -3,6 +3,11 @@ import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_text_styles.dart';
+import '../../../data/models/product_model.dart';
+import '../../../data/models/order_model.dart';
+import '../../../data/repositories/product_repository.dart';
+import '../../../data/repositories/order_repository.dart';
+import '../../../data/services/api_service.dart';
 import '../../../data/services/auth_provider.dart';
 import '../../../widgets/common/agri_card.dart';
 import '../../../widgets/common/agri_button.dart';
@@ -16,74 +21,77 @@ class FarmerDashboardScreen extends StatefulWidget {
 }
 
 class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
-  // Mock products list for farmer
-  final List<Map<String, String>> _myProducts = [
-    {'title': 'Cà chua organic Lâm Đồng', 'price': '25,000đ/kg', 'qty': 'Có sẵn: 120 kg'},
-    {'title': 'Sầu riêng Ri6 VietGAP', 'price': '120,000đ/kg', 'qty': 'Có sẵn: 500 kg'},
-    {'title': 'Bắp cải hữu cơ', 'price': '15,000đ/cây', 'qty': 'Có sẵn: 80 cây'},
-  ];
+  late final ProductRepository _productRepo;
+  late final OrderRepository _orderRepo;
 
-  // Mock orders list for farmer
-  final List<Map<String, String>> _orders = [
-    {
-      'id': 'ORD-8821',
-      'product': 'Cà chua organic Lâm Đồng',
-      'quantity': '20 kg',
-      'total': '500,000đ',
-      'buyer': 'Nguyễn Văn A',
-      'status': 'Đang chờ xử lý',
-    },
-    {
-      'id': 'ORD-8822',
-      'product': 'Bắp cải hữu cơ',
-      'quantity': '10 cây',
-      'total': '150,000đ',
-      'buyer': 'Trần Thị B',
-      'status': 'Đang xử lý',
-    },
-  ];
+  List<ProductModel> _products = [];
+  List<OrderModel> _orders = [];
+  bool _loading = true;
 
-  void _updateOrderStatus(int index) {
-    showDialog(
+  @override
+  void initState() {
+    super.initState();
+    _productRepo = ProductRepository(ApiService());
+    _orderRepo = OrderRepository(ApiService());
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() => _loading = true);
+    try {
+      final results = await Future.wait([
+        _productRepo.getProducts(sortBy: 'createdAt', order: 'desc', limit: 10),
+        _orderRepo.getSellerOrders(status: 'pending'),
+      ]);
+      setState(() {
+        _products = results[0] as List<ProductModel>;
+        _orders = results[1] as List<OrderModel>;
+        _loading = false;
+      });
+    } catch (_) {
+      setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _updateOrderStatus(OrderModel order) async {
+    final statuses = [
+      {'value': 'confirmed', 'label': 'Xác nhận'},
+      {'value': 'preparing', 'label': 'Đang chuẩn bị'},
+      {'value': 'shipping', 'label': 'Đang giao'},
+      {'value': 'delivered', 'label': 'Hoàn thành'},
+      {'value': 'cancelled', 'label': 'Hủy đơn'},
+    ];
+
+    await showDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Cập nhật trạng thái đơn hàng'),
-          content: const Text('Chọn trạng thái mới cho đơn hàng này:'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  _orders[index]['status'] = 'Đang xử lý';
-                });
-                Navigator.pop(context);
-              },
-              child: const Text('Đang xử lý'),
-            ),
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  _orders[index]['status'] = 'Đã hoàn thành';
-                });
-                Navigator.pop(context);
-              },
-              child: Text(
-                'Hoàn thành',
-                style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cập nhật trạng thái đơn hàng'),
+        content: const Text('Chọn trạng thái mới:'),
+        actions: statuses.map((s) {
+          return TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              try {
+                await _orderRepo.updateOrderStatus(order.id, s['value']!);
+                _load();
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(e.toString()), backgroundColor: AppColors.error),
+                  );
+                }
+              }
+            },
+            child: Text(
+              s['label']!,
+              style: TextStyle(
+                color: s['value'] == 'cancelled' ? AppColors.error : AppColors.primary,
+                fontWeight: FontWeight.bold,
               ),
             ),
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  _orders[index]['status'] = 'Đã hủy';
-                });
-                Navigator.pop(context);
-              },
-              child: const Text('Hủy đơn', style: TextStyle(color: AppColors.error)),
-            ),
-          ],
-        );
-      },
+          );
+        }).toList(),
+      ),
     );
   }
 
@@ -98,190 +106,221 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: AppColors.ink),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: AppColors.ink),
+            onPressed: _load,
+          ),
+        ],
       ),
-      body: Container(
-        color: AppColors.surfaceSoft,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Greeting Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
+      body: _loading
+          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          : RefreshIndicator(
+              onRefresh: _load,
+              color: AppColors.primary,
+              child: Container(
+                color: AppColors.surfaceSoft,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        '${AppStrings.welcome},',
-                        style: AppTextStyles.caption.copyWith(color: AppColors.muted),
+                      // Greeting
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${AppStrings.welcome},',
+                                style: AppTextStyles.caption.copyWith(color: AppColors.muted),
+                              ),
+                              Text(
+                                user?.fullName ?? user?.email ?? 'Nông dân',
+                                style: AppTextStyles.sectionTitle.copyWith(fontSize: 22),
+                              ),
+                            ],
+                          ),
+                          const CircleAvatar(
+                            backgroundColor: AppColors.primaryUltraLight,
+                            radius: 24,
+                            child: Icon(Icons.person, color: AppColors.primary),
+                          ),
+                        ],
                       ),
-                      Text(
-                        user?.fullName ?? user?.phone ?? 'Nông dân',
-                        style: AppTextStyles.sectionTitle.copyWith(fontSize: 22),
+                      const SizedBox(height: 24),
+
+                      // Stats
+                      Text('Thống kê tổng quan',
+                          style: AppTextStyles.sectionTitle.copyWith(fontSize: 16)),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildStatCard(
+                                'Sản phẩm', '${_products.length}', AppColors.primary),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _buildStatCard(
+                                'Đơn chờ', '${_orders.length}', AppColors.accent),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _buildStatCard('Đang bán',
+                                '${_products.where((p) => p.status == 'active').length}',
+                                AppColors.harvest),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  CircleAvatar(
-                    backgroundColor: AppColors.primaryUltraLight,
-                    radius: 24,
-                    child: const Icon(Icons.person, color: AppColors.primary),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
+                      const SizedBox(height: 24),
 
-              // Statistics Section
-              Text(
-                'Thống kê tổng quan',
-                style: AppTextStyles.sectionTitle.copyWith(fontSize: 16),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildStatCard('Sản phẩm', '${_myProducts.length}', AppColors.primary),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _buildStatCard('Đơn hàng mới', '${_orders.length}', AppColors.accent),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _buildStatCard('Doanh thu', '3.4M đ', AppColors.harvest),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
+                      // My products
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Sản phẩm của tôi', style: AppTextStyles.sectionTitle),
+                          TextButton(
+                            onPressed: _load,
+                            child: Text('Làm mới',
+                                style: TextStyle(
+                                    color: AppColors.primary, fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
 
-              // Section Products
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Sản phẩm của tôi',
-                    style: AppTextStyles.sectionTitle,
-                  ),
-                  TextButton(
-                    onPressed: () {},
-                    child: Text(
-                      'Xem tất cả',
-                      style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-
-              // List of items
-              AgriCard(
-                child: Column(
-                  children: _myProducts.map((p) {
-                    final idx = _myProducts.indexOf(p);
-                    return Column(
-                      children: [
-                        _buildProductRow(p['title']!, p['price']!, p['qty']!),
-                        if (idx < _myProducts.length - 1) const Divider(),
-                      ],
-                    );
-                  }).toList(),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Add Product Quick Button
-              AgriButton(
-                text: 'Đăng bán nông sản mới',
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const AddProductScreen()),
-                  );
-                },
-              ),
-              const SizedBox(height: 24),
-
-              // Pending Orders Section
-              Text(
-                'Đơn hàng đang chờ xử lý',
-                style: AppTextStyles.sectionTitle,
-              ),
-              const SizedBox(height: 12),
-              ..._orders.map((order) {
-                final idx = _orders.indexOf(order);
-                final statusColor = order['status'] == 'Đang chờ xử lý'
-                    ? AppColors.accent
-                    : order['status'] == 'Đang xử lý'
-                        ? AppColors.primaryLight
-                        : order['status'] == 'Đã hoàn thành'
-                            ? AppColors.primary
-                            : AppColors.error;
-
-                return AgriCard(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  onTap: () => _updateOrderStatus(idx),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Text(
-                                  order['id']!,
-                                  style: AppTextStyles.body.copyWith(fontWeight: FontWeight.bold),
+                      _products.isEmpty
+                          ? AgriCard(
+                              child: const Center(
+                                child: Padding(
+                                  padding: EdgeInsets.all(16),
+                                  child: Text('Chưa có sản phẩm nào',
+                                      style: TextStyle(color: AppColors.muted)),
                                 ),
-                                const SizedBox(width: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: statusColor.withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(12),
+                              ),
+                            )
+                          : AgriCard(
+                              child: Column(
+                                children: _products.asMap().entries.map((entry) {
+                                  final i = entry.key;
+                                  final p = entry.value;
+                                  return Column(
+                                    children: [
+                                      _buildProductRow(
+                                        p.name,
+                                        '${_formatPrice(p.pricePerUnit)}đ/${p.unit}',
+                                        'Còn: ${p.availableQuantity.toStringAsFixed(0)} ${p.unit}',
+                                      ),
+                                      if (i < _products.length - 1) const Divider(),
+                                    ],
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                      const SizedBox(height: 16),
+
+                      AgriButton(
+                        text: 'Đăng bán nông sản mới',
+                        onPressed: () async {
+                          final added = await Navigator.push<bool>(
+                            context,
+                            MaterialPageRoute(builder: (_) => const AddProductScreen()),
+                          );
+                          if (added == true) _load();
+                        },
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Pending orders
+                      Text('Đơn hàng đang chờ xử lý', style: AppTextStyles.sectionTitle),
+                      const SizedBox(height: 12),
+
+                      if (_orders.isEmpty)
+                        AgriCard(
+                          child: const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(16),
+                              child: Text('Không có đơn hàng nào đang chờ',
+                                  style: TextStyle(color: AppColors.muted)),
+                            ),
+                          ),
+                        )
+                      else
+                        ..._orders.map((order) {
+                          final statusColor = _statusColor(order.status);
+                          return AgriCard(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            onTap: () => _updateOrderStatus(order),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Text(
+                                            order.orderCode,
+                                            style: AppTextStyles.body
+                                                .copyWith(fontWeight: FontWeight.bold),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          _StatusChip(
+                                              label: order.statusLabel, color: statusColor),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      if (order.items.isNotEmpty)
+                                        Text(
+                                          order.items.first.productSnapshot['name'] ?? '',
+                                          style: AppTextStyles.body.copyWith(color: AppColors.ink),
+                                        ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '${order.items.length} sản phẩm',
+                                        style: AppTextStyles.caption
+                                            .copyWith(color: AppColors.muted),
+                                      ),
+                                    ],
                                   ),
-                                  child: Text(
-                                    order['status']!,
-                                    style: TextStyle(
-                                      color: statusColor,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                ),
+                                Text(
+                                  '${_formatPrice(order.totalAmount)}đ',
+                                  style: AppTextStyles.body.copyWith(
+                                    color: AppColors.accentActive,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 8),
-                            Text(
-                              order['product']!,
-                              style: AppTextStyles.body.copyWith(color: AppColors.ink),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Số lượng: ${order['quantity']} | Người mua: ${order['buyer']}',
-                              style: AppTextStyles.caption.copyWith(color: AppColors.muted),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Text(
-                        order['total']!,
-                        style: AppTextStyles.body.copyWith(
-                          color: AppColors.accentActive,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                          );
+                        }),
                     ],
                   ),
-                );
-              }),
-            ],
-          ),
-        ),
-      ),
+                ),
+              ),
+            ),
     );
   }
+
+  Color _statusColor(String status) {
+    switch (status) {
+      case 'pending': return AppColors.accent;
+      case 'confirmed': return AppColors.primaryLight;
+      case 'shipping': return const Color(0xFF2563EB);
+      case 'delivered': return AppColors.primary;
+      case 'cancelled': return AppColors.error;
+      default: return AppColors.muted;
+    }
+  }
+
+  String _formatPrice(double price) => price
+      .toStringAsFixed(0)
+      .replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.');
 
   Widget _buildStatCard(String label, String value, Color color) {
     return AgriCard(
@@ -291,21 +330,15 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: AppTextStyles.caption.copyWith(color: AppColors.muted, fontSize: 11),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
+          Text(label,
+              style: AppTextStyles.caption
+                  .copyWith(color: AppColors.muted, fontSize: 11),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis),
           const SizedBox(height: 8),
-          Text(
-            value,
-            style: AppTextStyles.sectionTitle.copyWith(
-              color: color,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          Text(value,
+              style: AppTextStyles.sectionTitle
+                  .copyWith(color: color, fontSize: 18, fontWeight: FontWeight.bold)),
         ],
       ),
     );
@@ -313,7 +346,7 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
 
   Widget _buildProductRow(String title, String price, String qty) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -321,26 +354,42 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w600),
-                ),
+                Text(title,
+                    style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w600),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 4),
-                Text(
-                  qty,
-                  style: AppTextStyles.caption.copyWith(color: AppColors.muted),
-                ),
+                Text(qty,
+                    style: AppTextStyles.caption.copyWith(color: AppColors.muted)),
               ],
             ),
           ),
-          Text(
-            price,
-            style: AppTextStyles.body.copyWith(
-              color: AppColors.accentActive,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          Text(price,
+              style: AppTextStyles.body
+                  .copyWith(color: AppColors.accentActive, fontWeight: FontWeight.bold)),
         ],
+      ),
+    );
+  }
+}
+
+class _StatusChip extends StatelessWidget {
+  final String label;
+  final Color color;
+
+  const _StatusChip({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold),
       ),
     );
   }

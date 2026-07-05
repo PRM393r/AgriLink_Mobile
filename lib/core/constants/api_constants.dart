@@ -12,7 +12,9 @@ class ApiConstants {
   static const String login = '/auth/login';
   static const String loginOtp = '/auth/login-otp';
   static const String getMe = '/users/me';
-  static const String updateRole = '/users/me/role'; // From the initial specs, PUT /users/me/role
+  static const String updateMe = '/users/me';
+  static const String updateRole =
+      '/users/me/role'; // From the initial specs, PUT /users/me/role
 
   // Products Endpoints
   static const String products = '/products';

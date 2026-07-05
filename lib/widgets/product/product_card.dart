@@ -32,18 +32,43 @@ class ProductCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Product Image or placeholder
-          AspectRatio(
-            aspectRatio: 1.3,
-            child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-              child: hasImage
-                  ? Image.network(
-                      product.images.first,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
-                    )
-                  : _buildPlaceholder(),
-            ),
+          Stack(
+            children: [
+              AspectRatio(
+                aspectRatio: 1.3,
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                  child: hasImage
+                      ? Image.network(
+                          product.images.first,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
+                        )
+                      : _buildPlaceholder(),
+                ),
+              ),
+              if (isCustomer)
+                Positioned(
+                  top: 4,
+                  right: 4,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.8),
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.favorite_border, size: 20, color: AppColors.error),
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Đã thêm vào yêu thích!'), duration: Duration(seconds: 1)),
+                        );
+                      },
+                      constraints: const BoxConstraints(),
+                      padding: const EdgeInsets.all(6),
+                    ),
+                  ),
+                ),
+            ],
           ),
           Padding(
             padding: const EdgeInsets.all(10.0),

@@ -9,6 +9,10 @@ import '../screens/dashboard/customer/customer_dashboard_screen.dart';
 import '../screens/marketplace/marketplace_screen.dart';
 import '../screens/marketplace/product_detail_screen.dart';
 
+import '../screens/dashboard/farmer/my_products_screen.dart';
+import '../screens/dashboard/farmer/product_form_screen.dart';
+import '../screens/marketplace/wishlist_screen.dart';
+
 class AppRouter {
   const AppRouter._();
 
@@ -21,6 +25,9 @@ class AppRouter {
   static const String customer = '/customer';
   static const String marketplace = '/marketplace';
   static const String productDetail = '/product-detail';
+  static const String myProducts = '/my-products';
+  static const String productForm = '/product-form';
+  static const String wishlist = '/wishlist';
 
   static Route<dynamic>? onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -42,6 +49,12 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const MarketplaceScreen());
       case productDetail:
         return MaterialPageRoute(builder: (_) => const ProductDetailScreen());
+      case myProducts:
+        return MaterialPageRoute(builder: (_) => const MyProductsScreen());
+      case productForm:
+        return MaterialPageRoute(builder: (_) => const ProductFormScreen());
+      case wishlist:
+        return MaterialPageRoute(builder: (_) => const WishlistScreen());
       default:
         return MaterialPageRoute(
           builder: (_) => Scaffold(

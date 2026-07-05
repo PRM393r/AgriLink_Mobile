@@ -3,6 +3,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../widgets/common/agri_button.dart';
 import '../../../widgets/product/product_badge.dart';
+import '../../../widgets/product/reviews_section.dart';
 
 class ProductDetailScreen extends StatelessWidget {
   const ProductDetailScreen({super.key});
@@ -91,6 +92,13 @@ class ProductDetailScreen extends StatelessWidget {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 32),
+                  const Divider(),
+                  const SizedBox(height: 16),
+                  
+                  // Reviews Section (TV2 task)
+                  const ReviewsSection(productId: 'mock_id'),
+                  
                   const SizedBox(height: 40),
                   // CTA button
                   AgriButton(
@@ -106,3 +114,4 @@ class ProductDetailScreen extends StatelessWidget {
     );
   }
 }
+

@@ -23,6 +23,24 @@ class ProductService {
   }
 
   Future<ProductModel> publishProduct(ProductModel product) {
+    _validateProduct(product);
+    return _productRepository.createProduct(product);
+  }
+
+  Future<ProductModel> updateProduct(String id, ProductModel product) {
+    _validateProduct(product);
+    return _productRepository.updateProduct(id, product);
+  }
+
+  Future<void> deleteProduct(String id) {
+    return _productRepository.deleteProduct(id);
+  }
+
+  Future<List<ProductModel>> fetchMyProducts() {
+    return _productRepository.getMyProducts();
+  }
+
+  void _validateProduct(ProductModel product) {
     if (product.name.trim().isEmpty) {
       throw Exception('Tên sản phẩm không được để trống');
     }
@@ -32,7 +50,6 @@ class ProductService {
     if (product.availableQuantity <= 0) {
       throw Exception('Số lượng bán phải lớn hơn 0');
     }
-    return _productRepository.createProduct(product);
   }
 
   Future<List<String>> fetchCategories() {

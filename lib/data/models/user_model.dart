@@ -19,7 +19,7 @@ class UserModel {
 
   bool get isFarmer => role == 'farmer';
   bool get isSupplier => role == 'supplier';
-  bool get isCustomer => role == 'customer';
+  bool get isCustomer => role == 'customer' || role == 'buyer';
 
   bool get isValidRole => isFarmer || isSupplier || isCustomer;
 

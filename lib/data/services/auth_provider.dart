@@ -65,10 +65,10 @@ class AuthProvider extends ChangeNotifier {
       // Fetch user profile from NestJS
       final user = await _authRepository.getMe();
       _currentUser = user;
-      
+
       // Initialize WebSocket connection for notifications
       _notificationService.initializeSocket();
-      
+
       notifyListeners();
       return true;
     } catch (_) {
@@ -81,13 +81,19 @@ class AuthProvider extends ChangeNotifier {
   }
 
   /// Requests Firebase OTP for the given phone number.
-  Future<void> sendOtp(String phone, {required VoidCallback onSuccess, required Function(String) onError}) async {
+  Future<void> sendOtp(
+    String phone, {
+    required VoidCallback onSuccess,
+    required Function(String) onError,
+  }) async {
     _setLoading(true);
     _phoneNumber = PhoneFormatter.formatToE164(phone);
 
     // If running on web, use mock OTP auth directly to bypass Firebase Web recaptcha/region restrictions.
     if (kIsWeb) {
-      debugPrint("Running on Web: Bypassing real Firebase SMS to use mock OTP auth.");
+      debugPrint(
+        "Running on Web: Bypassing real Firebase SMS to use mock OTP auth.",
+      );
       await Future.delayed(const Duration(milliseconds: 600));
       _verificationId = "mock_verification_id";
       _setLoading(false);
@@ -105,14 +111,18 @@ class AuthProvider extends ChangeNotifier {
         },
         onError: (error) {
           // Fallback to mock mode
-          debugPrint("Firebase Auth error: $error. Falling back to mock verification.");
+          debugPrint(
+            "Firebase Auth error: $error. Falling back to mock verification.",
+          );
           _verificationId = "mock_verification_id";
           _setLoading(false);
           onSuccess();
         },
       );
     } catch (e) {
-      debugPrint("Firebase Auth exception: $e. Falling back to mock verification.");
+      debugPrint(
+        "Firebase Auth exception: $e. Falling back to mock verification.",
+      );
       _verificationId = "mock_verification_id";
       _setLoading(false);
       onSuccess();
@@ -120,7 +130,11 @@ class AuthProvider extends ChangeNotifier {
   }
 
   /// Verifies Firebase OTP, sends Firebase token to NestJS, and synchronizes.
-  Future<void> verifyOtp(String smsCode, {required Function(bool isNewUser) onSuccess, required Function(String) onError}) async {
+  Future<void> verifyOtp(
+    String smsCode, {
+    required Function(bool isNewUser) onSuccess,
+    required Function(String) onError,
+  }) async {
     if (_verificationId == null || _phoneNumber == null) {
       onError('Mã xác thực không hợp lệ. Vui lòng thử lại.');
       return;
@@ -155,20 +169,18 @@ class AuthProvider extends ChangeNotifier {
         throw Exception('Không lấy được mã token xác thực từ Firebase');
       }
 
-      // 3. Login/Sync with NestJS Backend
-      final user = await _authRepository.loginWithOtp(
-        phone: _phoneNumber!,
-        idToken: idToken,
-      );
+      // 3. Sync Firebase session with NestJS, then hydrate role/profile from PostgreSQL.
+      await _apiService.syncUser(idToken);
+      final user = await _authRepository.getMe();
 
       _currentUser = user;
-      
+
       // 4. Initialize real-time socket
       _notificationService.initializeSocket();
 
       _setLoading(false);
       // If user status is pending or role is empty, they are considered a new user needing role selection
-      final isNew = user.role.isEmpty || user.role == 'farmer' && user.fullName.isEmpty; 
+      final isNew = user.role.isEmpty || user.fullName.isEmpty;
       onSuccess(isNew);
     } catch (e) {
       _setLoading(false);
@@ -177,7 +189,11 @@ class AuthProvider extends ChangeNotifier {
   }
 
   /// Updates the user's role on NestJS and updates state.
-  Future<void> updateRole(String role, {required VoidCallback onSuccess, required Function(String) onError}) async {
+  Future<void> updateRole(
+    String role, {
+    required VoidCallback onSuccess,
+    required Function(String) onError,
+  }) async {
     _setLoading(true);
 
     if (_currentUser?.id == "mock_user_id") {

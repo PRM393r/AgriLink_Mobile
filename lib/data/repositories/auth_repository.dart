@@ -18,10 +18,7 @@ class AuthRepository {
     try {
       final response = await _apiService.post(
         ApiConstants.loginOtp,
-        data: {
-          'phone': phone,
-          'idToken': idToken,
-        },
+        data: {'phone': phone, 'idToken': idToken},
       );
 
       final data = response.data;
@@ -64,9 +61,10 @@ class AuthRepository {
   /// Updates the user's role on the NestJS backend.
   Future<UserModel> updateRole(String role) async {
     try {
+      final backendRole = role == 'customer' ? 'buyer' : role;
       final response = await _apiService.put(
         ApiConstants.updateRole,
-        data: {'role': role},
+        data: {'role': backendRole},
       );
       final data = response.data;
       if (data is Map<String, dynamic> && data['data'] != null) {

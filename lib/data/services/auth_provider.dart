@@ -221,6 +221,42 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// Updates the user's editable profile fields on NestJS and updates state.
+  Future<void> updateProfile({
+    String? fullName,
+    String? email,
+    String? avatarUrl,
+    required VoidCallback onSuccess,
+    required Function(String) onError,
+  }) async {
+    _setLoading(true);
+
+    if (_currentUser?.id == "mock_user_id") {
+      _currentUser = _currentUser?.copyWith(
+        fullName: fullName ?? _currentUser?.fullName,
+        email: email ?? _currentUser?.email,
+        avatarUrl: avatarUrl ?? _currentUser?.avatarUrl,
+      );
+      _setLoading(false);
+      onSuccess();
+      return;
+    }
+
+    try {
+      final updatedUser = await _authRepository.updateProfile(
+        fullName: fullName,
+        email: email,
+        avatarUrl: avatarUrl,
+      );
+      _currentUser = updatedUser;
+      _setLoading(false);
+      onSuccess();
+    } catch (e) {
+      _setLoading(false);
+      onError(e.toString().replaceAll('Exception:', '').trim());
+    }
+  }
+
   /// Signs out of Firebase and deletes stored NestJS JWT token.
   Future<void> logout() async {
     _setLoading(true);

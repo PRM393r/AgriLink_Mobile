@@ -21,6 +21,7 @@ class ApiConstants {
   static const String loginOtp = '/auth/login-otp';
   static const String syncUser = '/auth/sync';
   static const String getMe = '/users/me';
+  static const String updateMe = '/users/me';
   static const String updateRole =
       '/users/me/role'; // From the initial specs, PUT /users/me/role
 

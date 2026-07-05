@@ -43,19 +43,19 @@ class ApiConstants {
   static const String products = '/products';
   static const String productCategories = '/products/categories';
 
-  // ── Orders ────────────────────────────────────────────────────────────────
-  static const String orders           = '/orders';
+  // Cooperatives Endpoints
+  static const String bulkListings = '/cooperatives/bulk-listings';
+  static const String myBulkListings = '/cooperatives/me/bulk-listings';
+  static const String members = '/cooperatives/me/members';
+  static const String harvestSchedules = '/cooperatives/harvest-schedules';
 
-  // ── Reviews ───────────────────────────────────────────────────────────────
-  static const String reviews          = '/reviews';
+  // Orders Endpoints
+  static const String orders = '/orders';
 
-  // ── Notifications ─────────────────────────────────────────────────────────
-  // GET  /notifications?isRead=false  → list + unreadCount
-  // PATCH /notifications/read-all
-  // PATCH /notifications/:id/read
-  static const String notifications        = '/notifications';
-  static const String notificationsReadAll = '/notifications/read-all';
-
-  // ── Storage ───────────────────────────────────────────────────────────────
-  static const String uploadImage      = '/storage/images/upload';
+  // Notifications Endpoints
+  static const String notificationsUnread = '/notifications/unread';
+  static const String notificationsCount = '/notifications/count';
+  static const String notificationsRead =
+      '/notifications'; // /notifications/:id/read
+  static const String notificationsMarkAllRead = '/notifications/mark-all-read';
 }

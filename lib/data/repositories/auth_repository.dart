@@ -163,6 +163,27 @@ class AuthRepository {
     } finally {
       await TokenStorage.deleteToken();
       await TokenStorage.deleteRefreshToken();
+  /// Updates the authenticated user's profile on the NestJS backend.
+  Future<UserModel> updateProfile({
+    String? fullName,
+    String? email,
+    String? avatarUrl,
+  }) async {
+    try {
+      final response = await _apiService.patch(
+        ApiConstants.updateMe,
+        data: {'fullName': ?fullName, 'email': ?email, 'avatarUrl': ?avatarUrl},
+      );
+
+      final data = response.data;
+      if (data is Map<String, dynamic> && data['data'] != null) {
+        return UserModel.fromJson(data['data'] as Map<String, dynamic>);
+      }
+      throw Exception('Cập nhật hồ sơ thất bại');
+    } on DioException catch (e) {
+      throw Exception(e.error ?? 'Cập nhật hồ sơ thất bại');
+    } catch (e) {
+      throw Exception('Lỗi cập nhật hồ sơ: $e');
     }
   }
 }

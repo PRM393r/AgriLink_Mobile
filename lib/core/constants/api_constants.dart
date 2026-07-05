@@ -25,6 +25,22 @@ class ApiConstants {
 
   // ── Products ──────────────────────────────────────────────────────────────
   static const String products         = '/products';
+  static String get wsUrl => 'http://$_host:5000/notifications';
+  static const bool enableNotificationSocket = false;
+
+  // Auth Endpoints
+  static const String sendOtp = '/auth/send-otp';
+  static const String verifyOtp = '/auth/verify-otp';
+  static const String login = '/auth/login';
+  static const String loginOtp = '/auth/login-otp';
+  static const String syncUser = '/auth/sync';
+  static const String getMe = '/users/me';
+  static const String updateMe = '/users/me';
+  static const String updateRole =
+      '/users/me/role'; // From the initial specs, PUT /users/me/role
+
+  // Products Endpoints
+  static const String products = '/products';
   static const String productCategories = '/products/categories';
 
   // ── Orders ────────────────────────────────────────────────────────────────

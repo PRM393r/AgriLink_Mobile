@@ -5,6 +5,11 @@ import '../screens/auth/otp_screen.dart';
 import '../screens/auth/role_picker_screen.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/cart/cart_screen.dart';
+import '../screens/checkout/checkout_screen.dart';
+import '../screens/checkout/order_success_screen.dart';
+import '../screens/orders/order_history_screen.dart';
+import '../screens/orders/order_detail_screen.dart';
+import '../screens/orders/seller_order_screen.dart';
 import '../screens/dashboard/customer/customer_dashboard_screen.dart';
 import '../screens/marketplace/marketplace_screen.dart';
 import '../screens/marketplace/product_detail_screen.dart';
@@ -18,6 +23,11 @@ class AppRouter {
   static const String rolePicker = '/role-picker';
   static const String home = '/home';
   static const String cart = '/cart';
+  static const String checkout = '/checkout';
+  static const String orderSuccess = '/order-success';
+  static const String orderHistory = '/order-history';
+  static const String orderDetail = '/order-detail';
+  static const String sellerOrders = '/seller-orders';
   static const String customer = '/customer';
   static const String marketplace = '/marketplace';
   static const String productDetail = '/product-detail';
@@ -36,6 +46,19 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const HomeScreen());
       case cart:
         return MaterialPageRoute(builder: (_) => const CartScreen());
+      case checkout:
+        return MaterialPageRoute(builder: (_) => const CheckoutScreen());
+      case orderSuccess:
+        return MaterialPageRoute(builder: (_) => const OrderSuccessScreen());
+      case orderHistory:
+        return MaterialPageRoute(builder: (_) => const OrderHistoryScreen());
+      case orderDetail:
+        return MaterialPageRoute(
+          builder: (_) => const OrderDetailScreen(),
+          settings: settings,
+        );
+      case sellerOrders:
+        return MaterialPageRoute(builder: (_) => const SellerOrderScreen());
       case customer:
         return MaterialPageRoute(builder: (_) => const CustomerDashboardScreen());
       case marketplace:

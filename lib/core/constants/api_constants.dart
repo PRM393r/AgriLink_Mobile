@@ -34,6 +34,9 @@ class ApiConstants {
   static const String members = '/cooperatives/me/members';
   static const String harvestSchedules = '/cooperatives/harvest-schedules';
 
+  // Orders Endpoints
+  static const String orders = '/orders';
+
   // Notifications Endpoints
   static const String notificationsUnread = '/notifications/unread';
   static const String notificationsCount = '/notifications/count';

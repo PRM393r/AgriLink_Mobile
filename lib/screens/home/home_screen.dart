@@ -11,6 +11,8 @@ import '../dashboard/supplier/supplier_dashboard_screen.dart';
 import '../dashboard/customer/customer_dashboard_screen.dart';
 import '../marketplace/marketplace_screen.dart';
 import '../cart/cart_screen.dart';
+import '../orders/order_history_screen.dart';
+import '../orders/seller_order_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -71,6 +73,7 @@ class _HomeScreenState extends State<HomeScreen> {
         const CustomerDashboardScreen(),
         const MarketplaceScreen(),
         const CartScreen(),
+        const OrderHistoryScreen(),
         _buildProfileTab(role, authProvider.currentUser?.phone ?? ''),
       ]);
 
@@ -151,6 +154,11 @@ class _HomeScreenState extends State<HomeScreen> {
           label: 'Giỏ hàng',
         ),
         const BottomNavigationBarItem(
+          icon: Icon(Icons.receipt_long_outlined),
+          activeIcon: Icon(Icons.receipt_long),
+          label: 'Đơn hàng',
+        ),
+        const BottomNavigationBarItem(
           icon: Icon(Icons.person_outline),
           activeIcon: Icon(Icons.person),
           label: 'Tài khoản',
@@ -161,7 +169,7 @@ class _HomeScreenState extends State<HomeScreen> {
       screens.addAll([
         role == 'farmer' ? const FarmerDashboardScreen() : const SupplierDashboardScreen(),
         const MarketplaceScreen(),
-        _buildOrdersTab(role),
+        const SellerOrderScreen(),
         _buildProfileTab(role, authProvider.currentUser?.phone ?? ''),
       ]);
 

@@ -13,18 +13,18 @@ class ProductRepository {
     String? category,
     String? search,
     String? farmingType,
+    int? limit,
+    String? sortBy,
+    String? order,
   }) async {
     try {
       final queryParams = <String, dynamic>{};
-      if (category != null && category.isNotEmpty) {
-        queryParams['category'] = category;
-      }
-      if (search != null && search.isNotEmpty) {
-        queryParams['search'] = search;
-      }
-      if (farmingType != null && farmingType.isNotEmpty) {
-        queryParams['farmingType'] = farmingType;
-      }
+      if (category != null && category.isNotEmpty) queryParams['categoryId'] = category;
+      if (search != null && search.isNotEmpty) queryParams['search'] = search;
+      if (farmingType != null && farmingType.isNotEmpty) queryParams['farmingType'] = farmingType;
+      if (limit != null) queryParams['limit'] = limit;
+      if (sortBy != null) queryParams['sortBy'] = sortBy;
+      if (order != null) queryParams['order'] = order;
 
       final response = await _apiService.get(
         ApiConstants.products,
@@ -32,9 +32,19 @@ class ProductRepository {
       );
 
       final data = response.data;
-      if (data is Map<String, dynamic> && data['data'] is List) {
-        final list = data['data'] as List;
-        return list.map((json) => ProductModel.fromJson(json as Map<String, dynamic>)).toList();
+      if (data is Map<String, dynamic>) {
+        final inner = data['data'];
+        List? list;
+        if (inner is List) {
+          list = inner;
+        } else if (inner is Map<String, dynamic> && inner['items'] is List) {
+          list = inner['items'] as List;
+        }
+        if (list != null) {
+          return list
+              .map((json) => ProductModel.fromJson(json as Map<String, dynamic>))
+              .toList();
+        }
       }
       return [];
     } on DioException catch (e) {

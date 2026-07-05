@@ -30,10 +30,11 @@ class ProductCard extends StatelessWidget {
       onTap: onTap,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           // Product Image or placeholder
           AspectRatio(
-            aspectRatio: 1.3,
+            aspectRatio: 1.4,
             child: ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
               child: hasImage
@@ -46,15 +47,17 @@ class ProductCard extends StatelessWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(10.0),
+            padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                // Category & Farming Type Badges
-                Row(
+                // Badges — Wrap để không overflow khi text dài
+                Wrap(
+                  spacing: 4,
+                  runSpacing: 4,
                   children: [
                     ProductBadge(label: product.category),
-                    const SizedBox(width: 4),
                     ProductBadge(
                       label: product.farmingType,
                       backgroundColor: AppColors.surfaceGreen,
@@ -62,62 +65,49 @@ class ProductCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 // Product Name
                 Text(
                   product.name,
                   style: AppTextStyles.body.copyWith(
                     fontWeight: FontWeight.bold,
                     color: AppColors.ink,
+                    fontSize: 13,
                   ),
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 4),
-                // Seller info
+                const SizedBox(height: 6),
+                // Price + cart button trên cùng 1 hàng
                 Row(
-                  children: [
-                    const Icon(Icons.storefront, size: 14, color: AppColors.muted),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        'ID: ${product.sellerId.substring(0, product.sellerId.length > 8 ? 8 : product.sellerId.length)}...',
-                        style: AppTextStyles.caption.copyWith(color: AppColors.muted),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                // Price and Unit
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
                             '${product.pricePerUnit.toStringAsFixed(0)}đ',
                             style: AppTextStyles.body.copyWith(
                               fontWeight: FontWeight.bold,
                               color: AppColors.accentActive,
+                              fontSize: 13,
                             ),
                           ),
                           Text(
                             '/${product.unit}',
-                            style: AppTextStyles.caption.copyWith(color: AppColors.body),
+                            style: AppTextStyles.caption.copyWith(
+                              color: AppColors.muted,
+                              fontSize: 11,
+                            ),
                           ),
                         ],
                       ),
                     ),
                     if (isCustomer)
-                      IconButton(
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        icon: const Icon(Icons.add_shopping_cart, color: AppColors.primary),
-                        onPressed: () {
+                      GestureDetector(
+                        onTap: () {
                           Provider.of<CartProvider>(context, listen: false).addItem(product, 1);
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
@@ -127,6 +117,18 @@ class ProductCard extends StatelessWidget {
                             ),
                           );
                         },
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.add_shopping_cart,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                        ),
                       ),
                   ],
                 ),

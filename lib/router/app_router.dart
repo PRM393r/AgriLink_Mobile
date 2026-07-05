@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../screens/splash/splash_screen.dart';
 import '../screens/auth/login_screen.dart';
-import '../screens/auth/otp_screen.dart';
+import '../screens/auth/register_screen.dart';
+import '../screens/auth/verify_email_screen.dart';
 import '../screens/auth/role_picker_screen.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/cart/cart_screen.dart';
@@ -14,7 +15,8 @@ class AppRouter {
 
   static const String splash = '/';
   static const String login = '/login';
-  static const String otp = '/otp';
+  static const String register = '/register';
+  static const String verifyEmail = '/verify-email';
   static const String rolePicker = '/role-picker';
   static const String home = '/home';
   static const String cart = '/cart';
@@ -28,8 +30,13 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const SplashScreen());
       case login:
         return MaterialPageRoute(builder: (_) => const LoginScreen());
-      case otp:
-        return MaterialPageRoute(builder: (_) => const OtpScreen());
+      case register:
+        return MaterialPageRoute(builder: (_) => const RegisterScreen());
+      case verifyEmail:
+        return MaterialPageRoute(
+          builder: (_) => const VerifyEmailScreen(),
+          settings: settings,
+        );
       case rolePicker:
         return MaterialPageRoute(builder: (_) => const RolePickerScreen());
       case home:

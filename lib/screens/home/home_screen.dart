@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_strings.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../data/services/auth_provider.dart';
 import '../../data/providers/cart_provider.dart';
-import '../../router/app_router.dart';
 import '../dashboard/farmer/farmer_dashboard_screen.dart';
 import '../dashboard/supplier/supplier_dashboard_screen.dart';
 import '../dashboard/customer/customer_dashboard_screen.dart';
@@ -13,6 +11,7 @@ import '../marketplace/marketplace_screen.dart';
 import '../cart/cart_screen.dart';
 import '../orders/order_history_screen.dart';
 import '../orders/seller_order_screen.dart';
+import '../profile/profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,43 +23,11 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
 
-  void _handleLogout() async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text(AppStrings.logout),
-        content: const Text(AppStrings.confirmLogout),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text(AppStrings.cancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(
-              AppStrings.logout,
-              style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      await authProvider.logout();
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, AppRouter.login);
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
     final cartProvider = Provider.of<CartProvider>(context);
-    
+
     // Default to 'customer' if role is not set
     final role = authProvider.currentUser?.role ?? 'customer';
 
@@ -75,6 +42,7 @@ class _HomeScreenState extends State<HomeScreen> {
         const CartScreen(),
         const OrderHistoryScreen(),
         _buildProfileTab(role, authProvider.currentUser?.phone ?? ''),
+        const ProfileScreen(),
       ]);
 
       navItems.addAll([
@@ -167,10 +135,14 @@ class _HomeScreenState extends State<HomeScreen> {
     } else {
       // farmer or supplier
       screens.addAll([
-        role == 'farmer' ? const FarmerDashboardScreen() : const SupplierDashboardScreen(),
+        role == 'farmer'
+            ? const FarmerDashboardScreen()
+            : const SupplierDashboardScreen(),
         const MarketplaceScreen(),
         const SellerOrderScreen(),
         _buildProfileTab(role, authProvider.currentUser?.phone ?? ''),
+        _buildOrdersTab(role),
+        const ProfileScreen(),
       ]);
 
       navItems.addAll([
@@ -203,10 +175,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: screens,
-      ),
+      body: IndexedStack(index: _currentIndex, children: screens),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) {
@@ -219,126 +188,6 @@ class _HomeScreenState extends State<HomeScreen> {
         unselectedItemColor: AppColors.muted,
         selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
         items: navItems,
-      ),
-    );
-  }
-
-  Widget _buildProfileTab(String role, String phone) {
-    final roleText = role == 'customer'
-        ? 'Người mua'
-        : role == 'farmer'
-            ? 'Nông dân'
-            : 'Nhà cung cấp';
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Tài khoản của tôi', style: TextStyle(color: AppColors.ink)),
-        backgroundColor: Colors.white,
-        elevation: 0,
-      ),
-      body: Container(
-        color: AppColors.surfaceSoft,
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            const SizedBox(height: 20),
-            // User Avatar Card
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 6,
-                    offset: Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 36,
-                    backgroundColor: AppColors.primaryUltraLight,
-                    child: const Icon(Icons.person, size: 44, color: AppColors.primary),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Người dùng thử nghiệm',
-                          style: AppTextStyles.sectionTitle.copyWith(fontSize: 18),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Số điện thoại: $phone',
-                          style: AppTextStyles.body.copyWith(color: AppColors.muted),
-                        ),
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: AppColors.primaryUltraLight,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            roleText,
-                            style: AppTextStyles.caption.copyWith(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 32),
-            // Quick Actions List
-            _buildProfileItem(Icons.settings_outlined, 'Cấu hình tài khoản'),
-            _buildProfileItem(Icons.security_outlined, 'Bảo mật & Quyền riêng tư'),
-            _buildProfileItem(Icons.help_outline_outlined, 'Trung tâm hỗ trợ'),
-            const Spacer(),
-            // Logout Button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _handleLogout,
-                icon: const Icon(Icons.logout, color: Colors.white),
-                label: const Text('Đăng xuất', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.error,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildProfileItem(IconData icon, String title) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: ListTile(
-        leading: Icon(icon, color: AppColors.primary),
-        title: Text(title, style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w600)),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.muted),
-        onTap: () {},
       ),
     );
   }
@@ -366,8 +215,22 @@ class _HomeScreenState extends State<HomeScreen> {
             Expanded(
               child: ListView(
                 children: [
-                  _buildOrderCard('ORD-2201', 'Hoàn thành', 'Gạo ST25', '100 kg', '2,800,000đ', 'Đã giao thành công cho khách hàng'),
-                  _buildOrderCard('ORD-2202', 'Đang giao', 'Xoài cát Hòa Lộc', '20 kg', '1,300,000đ', 'Đang trên đường vận chuyển'),
+                  _buildOrderCard(
+                    'ORD-2201',
+                    'Hoàn thành',
+                    'Gạo ST25',
+                    '100 kg',
+                    '2,800,000đ',
+                    'Đã giao thành công cho khách hàng',
+                  ),
+                  _buildOrderCard(
+                    'ORD-2202',
+                    'Đang giao',
+                    'Xoài cát Hòa Lộc',
+                    '20 kg',
+                    '1,300,000đ',
+                    'Đang trên đường vận chuyển',
+                  ),
                 ],
               ),
             ),
@@ -385,7 +248,9 @@ class _HomeScreenState extends State<HomeScreen> {
     String total,
     String note,
   ) {
-    final statusColor = status == 'Hoàn thành' ? AppColors.primary : AppColors.accent;
+    final statusColor = status == 'Hoàn thành'
+        ? AppColors.primary
+        : AppColors.accent;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -398,26 +263,53 @@ class _HomeScreenState extends State<HomeScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(code, style: AppTextStyles.body.copyWith(fontWeight: FontWeight.bold)),
+                Text(
+                  code,
+                  style: AppTextStyles.body.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: statusColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     status,
-                    style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: statusColor,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
             ),
             const Divider(height: 20),
-            Text(item, style: AppTextStyles.body.copyWith(fontWeight: FontWeight.bold, color: AppColors.ink)),
+            Text(
+              item,
+              style: AppTextStyles.body.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppColors.ink,
+              ),
+            ),
             const SizedBox(height: 4),
-            Text('Số lượng: $qty | Tổng cộng: $total', style: AppTextStyles.caption.copyWith(color: AppColors.body)),
+            Text(
+              'Số lượng: $qty | Tổng cộng: $total',
+              style: AppTextStyles.caption.copyWith(color: AppColors.body),
+            ),
             const SizedBox(height: 8),
-            Text(note, style: AppTextStyles.caption.copyWith(color: AppColors.muted, fontStyle: FontStyle.italic)),
+            Text(
+              note,
+              style: AppTextStyles.caption.copyWith(
+                color: AppColors.muted,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
           ],
         ),
       ),

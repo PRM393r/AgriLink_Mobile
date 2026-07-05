@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/utils/page_transitions.dart';
 import '../screens/splash/splash_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/otp_screen.dart';
@@ -29,25 +30,25 @@ class AppRouter {
       case splash:
         return MaterialPageRoute(builder: (_) => const SplashScreen());
       case login:
-        return MaterialPageRoute(builder: (_) => const LoginScreen());
+        return FadeScaleRoute(page: const LoginScreen());
       case otp:
-        return MaterialPageRoute(builder: (_) => const OtpScreen());
+        return SlideRoute(page: const OtpScreen());
       case rolePicker:
-        return MaterialPageRoute(builder: (_) => const RolePickerScreen());
+        return FadeScaleRoute(page: const RolePickerScreen());
       case home:
-        return MaterialPageRoute(builder: (_) => const HomeScreen());
+        return FadeScaleRoute(page: const HomeScreen());
       case cart:
-        return MaterialPageRoute(builder: (_) => const CartScreen());
+        return SlideUpRoute(page: const CartScreen());
       case customer:
-        return MaterialPageRoute(
-          builder: (_) => const CustomerDashboardScreen(),
-        );
+        return FadeScaleRoute(
+            page: const CustomerDashboardScreen());
       case marketplace:
-        return MaterialPageRoute(builder: (_) => const MarketplaceScreen());
+        return SlideRoute(page: const MarketplaceScreen());
       case productDetail:
-        return MaterialPageRoute(builder: (_) => const ProductDetailScreen());
+        return SlideUpRoute(
+            page: const ProductDetailScreen());
       case editProfile:
-        return MaterialPageRoute(builder: (_) => const EditProfileScreen());
+        return SlideRoute(page: const EditProfileScreen());
       default:
         return MaterialPageRoute(
           builder: (_) => Scaffold(

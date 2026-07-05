@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
+import '../../core/constants/app_shadows.dart';
 import '../../data/services/auth_provider.dart';
 import '../../data/providers/cart_provider.dart';
 import '../dashboard/farmer/farmer_dashboard_screen.dart';
@@ -29,9 +30,9 @@ class _HomeScreenState extends State<HomeScreen> {
     // Default to 'customer' if role is not set
     final role = authProvider.currentUser?.role ?? 'customer';
 
-    // Build lists of screens and bottom bar items based on role
+    // Build lists of screens and nav items based on role
     final List<Widget> screens = [];
-    final List<BottomNavigationBarItem> navItems = [];
+    final List<_NavItem> navItems = [];
 
     if (role == 'customer') {
       screens.addAll([
@@ -42,84 +43,25 @@ class _HomeScreenState extends State<HomeScreen> {
       ]);
 
       navItems.addAll([
-        const BottomNavigationBarItem(
-          icon: Icon(Icons.home_outlined),
-          activeIcon: Icon(Icons.home),
+        const _NavItem(
+          icon: Icons.home_outlined,
+          activeIcon: Icons.home_rounded,
           label: 'Trang chủ',
         ),
-        const BottomNavigationBarItem(
-          icon: Icon(Icons.search),
-          activeIcon: Icon(Icons.search_sharp),
+        const _NavItem(
+          icon: Icons.search_rounded,
+          activeIcon: Icons.search_rounded,
           label: 'Khám phá',
         ),
-        BottomNavigationBarItem(
-          icon: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              const Icon(Icons.shopping_cart_outlined),
-              if (cartProvider.totalItems > 0)
-                Positioned(
-                  right: -6,
-                  top: -6,
-                  child: Container(
-                    padding: const EdgeInsets.all(2),
-                    decoration: const BoxDecoration(
-                      color: AppColors.accentActive,
-                      shape: BoxShape.circle,
-                    ),
-                    constraints: const BoxConstraints(
-                      minWidth: 14,
-                      minHeight: 14,
-                    ),
-                    child: Text(
-                      '${cartProvider.totalItems}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 8,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          activeIcon: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              const Icon(Icons.shopping_cart),
-              if (cartProvider.totalItems > 0)
-                Positioned(
-                  right: -6,
-                  top: -6,
-                  child: Container(
-                    padding: const EdgeInsets.all(2),
-                    decoration: const BoxDecoration(
-                      color: AppColors.accentActive,
-                      shape: BoxShape.circle,
-                    ),
-                    constraints: const BoxConstraints(
-                      minWidth: 14,
-                      minHeight: 14,
-                    ),
-                    child: Text(
-                      '${cartProvider.totalItems}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 8,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
-            ],
-          ),
+        _NavItem(
+          icon: Icons.shopping_cart_outlined,
+          activeIcon: Icons.shopping_cart_rounded,
           label: 'Giỏ hàng',
+          badgeCount: cartProvider.totalItems,
         ),
-        const BottomNavigationBarItem(
-          icon: Icon(Icons.person_outline),
-          activeIcon: Icon(Icons.person),
+        const _NavItem(
+          icon: Icons.person_outline_rounded,
+          activeIcon: Icons.person_rounded,
           label: 'Tài khoản',
         ),
       ]);
@@ -135,48 +77,141 @@ class _HomeScreenState extends State<HomeScreen> {
       ]);
 
       navItems.addAll([
-        const BottomNavigationBarItem(
-          icon: Icon(Icons.dashboard_outlined),
-          activeIcon: Icon(Icons.dashboard),
+        const _NavItem(
+          icon: Icons.dashboard_outlined,
+          activeIcon: Icons.dashboard_rounded,
           label: 'Tổng quan',
         ),
-        const BottomNavigationBarItem(
-          icon: Icon(Icons.inventory_2_outlined),
-          activeIcon: Icon(Icons.inventory_2),
+        const _NavItem(
+          icon: Icons.inventory_2_outlined,
+          activeIcon: Icons.inventory_2_rounded,
           label: 'Sản phẩm',
         ),
-        const BottomNavigationBarItem(
-          icon: Icon(Icons.receipt_long_outlined),
-          activeIcon: Icon(Icons.receipt_long),
+        const _NavItem(
+          icon: Icons.receipt_long_outlined,
+          activeIcon: Icons.receipt_long_rounded,
           label: 'Đơn hàng',
         ),
-        const BottomNavigationBarItem(
-          icon: Icon(Icons.person_outline),
-          activeIcon: Icon(Icons.person),
+        const _NavItem(
+          icon: Icons.person_outline_rounded,
+          activeIcon: Icons.person_rounded,
           label: 'Tài khoản',
         ),
       ]);
     }
 
-    // Guard index out of range if role changes dynamically
+    // Guard index out of range
     if (_currentIndex >= screens.length) {
       _currentIndex = 0;
     }
 
     return Scaffold(
       body: IndexedStack(index: _currentIndex, children: screens),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: AppColors.primary,
-        unselectedItemColor: AppColors.muted,
-        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
-        items: navItems,
+      bottomNavigationBar: _buildCustomBottomNav(navItems),
+    );
+  }
+
+  Widget _buildCustomBottomNav(List<_NavItem> items) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.canvas,
+        boxShadow: AppShadows.bottomBar,
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: items.asMap().entries.map((entry) {
+              final index = entry.key;
+              final item = entry.value;
+              final isActive = _currentIndex == index;
+
+              return _buildNavItem(item, isActive, () {
+                setState(() => _currentIndex = index);
+              });
+            }).toList(),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem(_NavItem item, bool isActive, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeInOut,
+        padding: EdgeInsets.symmetric(
+          horizontal: isActive ? 16 : 12,
+          vertical: 8,
+        ),
+        decoration: BoxDecoration(
+          color: isActive
+              ? AppColors.primary.withValues(alpha: 0.1)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: Icon(
+                    isActive ? item.activeIcon : item.icon,
+                    key: ValueKey(isActive),
+                    size: 24,
+                    color: isActive ? AppColors.primary : AppColors.muted,
+                  ),
+                ),
+                // Badge
+                if (item.badgeCount > 0)
+                  Positioned(
+                    right: -6,
+                    top: -6,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.all(3),
+                      decoration: const BoxDecoration(
+                        color: AppColors.accentActive,
+                        shape: BoxShape.circle,
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 16,
+                        minHeight: 16,
+                      ),
+                      child: Text(
+                        '${item.badgeCount}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            // Label only when active
+            if (isActive) ...[
+              const SizedBox(width: 6),
+              Text(
+                item.label,
+                style: AppTextStyles.badge.copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -186,19 +221,21 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(title, style: const TextStyle(color: AppColors.ink)),
-        backgroundColor: Colors.white,
+        title: Text(title, style: AppTextStyles.sectionTitle),
+        backgroundColor: AppColors.canvas,
         elevation: 0,
       ),
       body: Container(
-        color: AppColors.surfaceSoft,
+        color: AppColors.surfaceElevated,
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Danh sách đơn hàng nhận được',
-              style: AppTextStyles.sectionTitle.copyWith(fontSize: 16),
+              style: AppTextStyles.subtitle.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
             const SizedBox(height: 12),
             Expanded(
@@ -237,71 +274,88 @@ class _HomeScreenState extends State<HomeScreen> {
     String total,
     String note,
   ) {
-    final statusColor = status == 'Hoàn thành'
-        ? AppColors.primary
-        : AppColors.accent;
+    final statusColor =
+        status == 'Hoàn thành' ? AppColors.success : AppColors.accent;
 
-    return Card(
+    return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  code,
-                  style: AppTextStyles.body.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    status,
-                    style: TextStyle(
-                      color: statusColor,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const Divider(height: 20),
-            Text(
-              item,
-              style: AppTextStyles.body.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppColors.ink,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Số lượng: $qty | Tổng cộng: $total',
-              style: AppTextStyles.caption.copyWith(color: AppColors.body),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              note,
-              style: AppTextStyles.caption.copyWith(
-                color: AppColors.muted,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-          ],
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.canvas,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.surfaceDivider.withValues(alpha: 0.3),
         ),
+        boxShadow: AppShadows.card,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                code,
+                style: AppTextStyles.subtitle.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  status,
+                  style: AppTextStyles.badge.copyWith(
+                    color: statusColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            item,
+            style: AppTextStyles.body.copyWith(
+              fontWeight: FontWeight.w600,
+              color: AppColors.ink,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Số lượng: $qty | Tổng cộng: $total',
+            style: AppTextStyles.caption.copyWith(color: AppColors.body),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            note,
+            style: AppTextStyles.caption.copyWith(
+              color: AppColors.muted,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
       ),
     );
   }
+}
+
+class _NavItem {
+  final IconData icon;
+  final IconData activeIcon;
+  final String label;
+  final int badgeCount;
+
+  const _NavItem({
+    required this.icon,
+    required this.activeIcon,
+    required this.label,
+    this.badgeCount = 0,
+  });
 }

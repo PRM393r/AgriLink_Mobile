@@ -190,17 +190,9 @@ class CartScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 16),
                         AgriButton(
-                          text: 'Đặt hàng',
+                          text: 'Tiến hành đặt hàng',
                           onPressed: () {
-                            // Place order mock
-                            cartProvider.clearCart();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Đặt hàng thành công! Đơn hàng đang được chờ xử lý.'),
-                                backgroundColor: AppColors.primary,
-                              ),
-                            );
-                            Navigator.pop(context);
+                            Navigator.pushNamed(context, AppRouter.checkout);
                           },
                         ),
                       ],

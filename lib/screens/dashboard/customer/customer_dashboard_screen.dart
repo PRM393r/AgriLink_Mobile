@@ -4,6 +4,8 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../data/models/product_model.dart';
 import '../../../data/providers/cart_provider.dart';
+import '../../../data/repositories/product_repository.dart';
+import '../../../data/services/api_service.dart';
 import '../../../widgets/product/product_card.dart';
 import '../../../router/app_router.dart';
 
@@ -17,6 +19,12 @@ class CustomerDashboardScreen extends StatefulWidget {
 class _CustomerDashboardScreenState extends State<CustomerDashboardScreen> {
   final PageController _bannerController = PageController();
   int _currentBannerIndex = 0;
+
+  late final ProductRepository _productRepo;
+  List<ProductModel> _featuredProducts = [];
+  List<ProductModel> _recentProducts = [];
+  bool _isLoading = true;
+  String? _error;
 
   final List<Map<String, dynamic>> _banners = const [
     {
@@ -47,130 +55,40 @@ class _CustomerDashboardScreenState extends State<CustomerDashboardScreen> {
     {'icon': "🐟", 'label': "Thủy sản"}
   ];
 
-  final List<ProductModel> _featuredProducts = [
-    ProductModel(
-      id: "f1",
-      name: "Cà chua bi organic",
-      description: "Cà chua ngọt lịm trồng theo tiêu chuẩn hữu cơ tại Đà Lạt",
-      pricePerUnit: 35000,
-      unit: "kg",
-      availableQuantity: 150,
-      minOrderQuantity: 1,
-      farmingType: "Organic",
-      status: "active",
-      viewCount: 42,
-      sellerId: "seller_dalat_farm",
-      sellerType: "farmer",
-      images: const [],
-      certifications: const ["Organic"],
-      category: "Rau củ",
-    ),
-    ProductModel(
-      id: "f2",
-      name: "Gạo ST25",
-      description: "Gạo đặc sản ST25 thơm ngon, dẻo ngọt đạt danh hiệu gạo ngon nhất thế giới",
-      pricePerUnit: 28000,
-      unit: "kg",
-      availableQuantity: 500,
-      minOrderQuantity: 5,
-      farmingType: "VietGAP",
-      status: "active",
-      viewCount: 120,
-      sellerId: "seller_an_giang_coop",
-      sellerType: "cooperative",
-      images: const [],
-      certifications: const ["VietGAP"],
-      category: "Lúa gạo",
-    ),
-    ProductModel(
-      id: "f3",
-      name: "Xoài cát Hòa Lộc",
-      description: "Xoài chín cây thơm lừng ngọt đậm đà vùng Tiền Giang",
-      pricePerUnit: 65000,
-      unit: "kg",
-      availableQuantity: 80,
-      minOrderQuantity: 1,
-      farmingType: "Organic",
-      status: "active",
-      viewCount: 76,
-      sellerId: "seller_tg_fruit",
-      sellerType: "farmer",
-      images: const [],
-      certifications: const ["Organic"],
-      category: "Trái cây",
-    ),
-    ProductModel(
-      id: "f4",
-      name: "Rau muống sạch",
-      description: "Rau muống non mướt, giòn ngọt canh tác VietGAP tại Củ Chi",
-      pricePerUnit: 12000,
-      unit: "bó",
-      availableQuantity: 300,
-      minOrderQuantity: 1,
-      farmingType: "VietGAP",
-      status: "active",
-      viewCount: 50,
-      sellerId: "seller_cuchi_coop",
-      sellerType: "cooperative",
-      images: const [],
-      certifications: const ["VietGAP"],
-      category: "Rau củ",
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _productRepo = ProductRepository(ApiService());
+    _loadProducts();
+  }
 
-  final List<ProductModel> _recentProducts = [
-    ProductModel(
-      id: "r1",
-      name: "Cà rốt Đà Lạt",
-      description: "Cà rốt củ to ngọt, tươi ngon mới nhổ buổi sáng",
-      pricePerUnit: 22000,
-      unit: "kg",
-      availableQuantity: 200,
-      minOrderQuantity: 1,
-      farmingType: "VietGAP",
-      status: "active",
-      viewCount: 15,
-      sellerId: "seller_dalat_farm",
-      sellerType: "farmer",
-      images: const [],
-      certifications: const ["VietGAP"],
-      category: "Rau củ",
-    ),
-    ProductModel(
-      id: "r2",
-      name: "Dưa hấu Long An",
-      description: "Dưa hấu ruột đỏ ngọt lịm mọng nước đặc sản Long An",
-      pricePerUnit: 15000,
-      unit: "kg",
-      availableQuantity: 400,
-      minOrderQuantity: 2,
-      farmingType: "VietGAP",
-      status: "active",
-      viewCount: 29,
-      sellerId: "seller_la_fruit",
-      sellerType: "farmer",
-      images: const [],
-      certifications: const ["VietGAP"],
-      category: "Trái cây",
-    ),
-    ProductModel(
-      id: "r3",
-      name: "Nấm rơm sạch",
-      description: "Nấm rơm tự nhiên, béo ngọt dinh dưỡng cao",
-      pricePerUnit: 90000,
-      unit: "kg",
-      availableQuantity: 50,
-      minOrderQuantity: 0.5,
-      farmingType: "Organic",
-      status: "active",
-      viewCount: 61,
-      sellerId: "seller_cuchi_coop",
-      sellerType: "cooperative",
-      images: const [],
-      certifications: const ["Organic"],
-      category: "Rau củ",
-    ),
-  ];
+  Future<void> _loadProducts() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      // Fetch 2 lists song song: featured (sort by viewCount) + recent (sort by createdAt)
+      final results = await Future.wait([
+        _productRepo.getProducts(limit: 4, sortBy: 'viewCount', order: 'DESC'),
+        _productRepo.getProducts(limit: 6, sortBy: 'createdAt', order: 'DESC'),
+      ]);
+      if (mounted) {
+        setState(() {
+          _featuredProducts = results[0];
+          _recentProducts = results[1];
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -232,61 +150,77 @@ class _CustomerDashboardScreenState extends State<CustomerDashboardScreen> {
       ),
       body: Container(
         color: AppColors.surfaceSoft,
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Banner slider
-              _buildBanners(),
-              const SizedBox(height: 24),
-
-              // Categories
-              _buildCategories(),
-              const SizedBox(height: 24),
-
-              // Featured products
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Sản phẩm nổi bật',
-                      style: AppTextStyles.sectionTitle.copyWith(color: AppColors.ink),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pushNamed(context, AppRouter.marketplace);
-                      },
-                      child: Text(
-                        'Xem tất cả',
-                        style: AppTextStyles.body.copyWith(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.bold,
+        child: _isLoading
+            ? const Center(
+                child: CircularProgressIndicator(color: AppColors.primary),
+              )
+            : _error != null
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.wifi_off, size: 48, color: AppColors.muted),
+                        const SizedBox(height: 12),
+                        Text('Không tải được sản phẩm', style: AppTextStyles.body),
+                        const SizedBox(height: 8),
+                        TextButton(
+                          onPressed: _loadProducts,
+                          child: const Text('Thử lại'),
                         ),
+                      ],
+                    ),
+                  )
+                : RefreshIndicator(
+                    color: AppColors.primary,
+                    onRefresh: _loadProducts,
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildBanners(),
+                          const SizedBox(height: 24),
+                          _buildCategories(),
+                          const SizedBox(height: 24),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Sản phẩm nổi bật',
+                                  style: AppTextStyles.sectionTitle.copyWith(color: AppColors.ink),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.pushNamed(context, AppRouter.marketplace),
+                                  child: Text(
+                                    'Xem tất cả',
+                                    style: AppTextStyles.body.copyWith(
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          _buildFeaturedGrid(),
+                          const SizedBox(height: 24),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                            child: Text(
+                              'Mới đăng gần đây',
+                              style: AppTextStyles.sectionTitle.copyWith(color: AppColors.ink),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          _buildRecentList(),
+                          const SizedBox(height: 32),
+                        ],
                       ),
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 8),
-              _buildFeaturedGrid(),
-              const SizedBox(height: 24),
-
-              // Recently added
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Text(
-                  'Mới đăng gần đây',
-                  style: AppTextStyles.sectionTitle.copyWith(color: AppColors.ink),
-                ),
-              ),
-              const SizedBox(height: 12),
-              _buildRecentList(),
-              const SizedBox(height: 32),
-            ],
-          ),
-        ),
+                  ),
       ),
     );
   }
@@ -443,7 +377,7 @@ class _CustomerDashboardScreenState extends State<CustomerDashboardScreen> {
         crossAxisCount: 2,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
-        childAspectRatio: 0.72,
+        childAspectRatio: 0.62,
       ),
       itemCount: _featuredProducts.length,
       itemBuilder: (context, index) {
@@ -464,7 +398,7 @@ class _CustomerDashboardScreenState extends State<CustomerDashboardScreen> {
 
   Widget _buildRecentList() {
     return SizedBox(
-      height: 235,
+      height: 260,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),

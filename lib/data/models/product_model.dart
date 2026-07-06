@@ -53,9 +53,19 @@ class ProductModel {
       expiryDate: json['expiryDate'] != null ? DateTime.tryParse(json['expiryDate'] as String) : null,
       sellerId: json['sellerId'] as String? ?? '',
       sellerType: json['sellerType'] as String? ?? '',
-      images: (json['images'] as List<dynamic>?)?.map((e) => e as String).toList() ?? const [],
-      certifications: (json['certifications'] as List<dynamic>?)?.map((e) => e as String).toList() ?? const [],
-      category: json['category'] as String? ?? '',
+      images: (json['images'] as List<dynamic>?)
+              ?.map((e) => e is Map ? (e['url'] as String? ?? '') : e as String)
+              .where((url) => url.isNotEmpty)
+              .toList() ??
+          const [],
+      certifications: (json['certifications'] as List<dynamic>?)
+              ?.map((e) => e is Map ? (e['name'] as String? ?? '') : e as String)
+              .where((s) => s.isNotEmpty)
+              .toList() ??
+          const [],
+      category: json['category'] is Map
+          ? ((json['category'] as Map)['name'] as String? ?? '')
+          : (json['category'] as String? ?? ''),
     );
   }
 

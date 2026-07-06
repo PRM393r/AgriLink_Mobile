@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_strings.dart';
 import '../../core/constants/app_text_styles.dart';
-import '../../core/utils/phone_formatter.dart';
 import '../../data/services/auth_provider.dart';
 import '../../router/app_router.dart';
-import '../../widgets/auth/phone_input.dart';
 import '../../widgets/common/agri_button.dart';
+import '../../widgets/common/agri_text_field.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -16,40 +14,67 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
-  final TextEditingController _phoneController = TextEditingController();
-  bool _isPhoneValid = false;
+class _LoginScreenState extends State<LoginScreen>
+    with SingleTickerProviderStateMixin {
+  final _formKey = GlobalKey<FormState>();
+  final _emailCtrl = TextEditingController();
+  final _passwordCtrl = TextEditingController();
+  bool _obscure = true;
+
+  late final AnimationController _fadeController;
+  late final Animation<double> _fadeAnimation;
+  late final Animation<Offset> _slideAnimation;
 
   @override
-  void dispose() {
-    _phoneController.dispose();
-    super.dispose();
-  }
+  void initState() {
+    super.initState();
+    _fadeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _fadeController, curve: Curves.easeOutCubic),
+    );
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.1),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(parent: _fadeController, curve: Curves.easeOutCubic),
+    );
 
-  void _onPhoneChanged(String val) {
-    setState(() {
-      _isPhoneValid = PhoneFormatter.isValidVietnamesePhone(val);
+    Future.delayed(const Duration(milliseconds: 200), () {
+      if (mounted) _fadeController.forward();
     });
   }
 
-  void _sendOtp() {
-    if (!_isPhoneValid) return;
-    
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    authProvider.sendOtp(
-      _phoneController.text.trim(),
-      onSuccess: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Mã OTP đã được gửi thành công!')),
-        );
-        Navigator.pushNamed(context, AppRouter.otp);
+  @override
+  void dispose() {
+    _emailCtrl.dispose();
+    _passwordCtrl.dispose();
+    _fadeController.dispose();
+    super.dispose();
+  }
+
+  void _login() {
+    if (!_formKey.currentState!.validate()) return;
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    auth.login(
+      email: _emailCtrl.text.trim(),
+      password: _passwordCtrl.text,
+      onSuccess: (isNewUser) {
+        if (isNewUser) {
+          Navigator.pushNamedAndRemoveUntil(
+            context, AppRouter.rolePicker, (r) => false,
+          );
+        } else {
+          Navigator.pushNamedAndRemoveUntil(
+            context, AppRouter.home, (r) => false,
+          );
+        }
       },
       onError: (err) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(err),
-            backgroundColor: AppColors.error,
-          ),
+          SnackBar(content: Text(err), backgroundColor: AppColors.error),
         );
       },
     );
@@ -60,71 +85,206 @@ class _LoginScreenState extends State<LoginScreen> {
     final isLoading = Provider.of<AuthProvider>(context).isLoading;
 
     return Scaffold(
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 36.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 40),
-              // Header logo / Brand Name
-              Center(
-                child: Column(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: const BoxDecoration(
-                        color: AppColors.primaryUltraLight,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.eco_outlined,
-                        size: 60,
-                        color: AppColors.primary,
-                      ),
+      body: Container(
+        decoration: const BoxDecoration(
+          color: AppColors.surfaceElevated,
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ── Top gradient header ──
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(24, 40, 24, 40),
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Color(0xFF1B4332),
+                        Color(0xFF2D6A4F),
+                        Color(0xFF40916C),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                    const SizedBox(height: 16),
-                    Text(
-                      AppStrings.appName,
-                      style: AppTextStyles.bigTitle.copyWith(
-                        color: AppColors.primary,
-                        letterSpacing: 1.2,
+                    borderRadius: BorderRadius.vertical(
+                      bottom: Radius.circular(32),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      // Logo
+                      Container(
+                        padding: const EdgeInsets.all(18),
+                        decoration: BoxDecoration(
+                          color: AppColors.canvas.withValues(alpha: 0.15),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: AppColors.canvas.withValues(alpha: 0.2),
+                            width: 2,
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.eco_rounded,
+                          size: 48,
+                          color: AppColors.canvas,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      AppStrings.loginSubtitle,
-                      style: AppTextStyles.body.copyWith(color: AppColors.muted),
-                    ),
-                  ],
+                      const SizedBox(height: 16),
+                      Text(
+                        'AgriLink',
+                        style: AppTextStyles.bigTitle.copyWith(
+                          color: AppColors.canvas,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Nông sản Việt — kết nối trực tiếp',
+                        style: AppTextStyles.subtitle.copyWith(
+                          color: AppColors.canvas.withValues(alpha: 0.8),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 60),
-              // Form Title
-              Text(
-                AppStrings.loginTitle,
-                style: AppTextStyles.sectionTitle.copyWith(fontSize: 22),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Vui lòng nhập số điện thoại để tiếp tục đăng nhập hoặc đăng ký tài khoản mới.',
-                style: AppTextStyles.caption.copyWith(color: AppColors.muted),
-              ),
-              const SizedBox(height: 24),
-              // Input Field
-              PhoneInput(
-                controller: _phoneController,
-                onChanged: _onPhoneChanged,
-              ),
-              const SizedBox(height: 32),
-              // Action Button
-              AgriButton(
-                text: AppStrings.sendOtpButton,
-                onPressed: _isPhoneValid ? _sendOtp : null,
-                isLoading: isLoading,
-              ),
-              const SizedBox(height: 24),
-            ],
+
+                // ── Form section ──
+                FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: SlideTransition(
+                    position: _slideAnimation,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 36, 24, 24),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Đăng nhập',
+                              style: AppTextStyles.sectionTitle.copyWith(
+                                fontSize: 22,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Nhập email và mật khẩu để tiếp tục.',
+                              style: AppTextStyles.subtitle.copyWith(
+                                color: AppColors.muted,
+                              ),
+                            ),
+                            const SizedBox(height: 28),
+
+                            // Email
+                            AgriTextField(
+                              controller: _emailCtrl,
+                              hintText: 'Email',
+                              keyboardType: TextInputType.emailAddress,
+                              prefixIcon: const Icon(Icons.email_outlined,
+                                  color: AppColors.muted),
+                              validator: (v) {
+                                if (v == null || v.trim().isEmpty) {
+                                  return 'Vui lòng nhập email';
+                                }
+                                final ok = RegExp(
+                                        r'^[\w\.\-]+@[\w\-]+\.\w{2,}$')
+                                    .hasMatch(v.trim());
+                                if (!ok) return 'Email không hợp lệ';
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 16),
+
+                            // Password
+                            AgriTextField(
+                              controller: _passwordCtrl,
+                              hintText: 'Mật khẩu',
+                              obscureText: _obscure,
+                              prefixIcon: const Icon(Icons.lock_outline,
+                                  color: AppColors.muted),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscure
+                                      ? Icons.visibility_off_outlined
+                                      : Icons.visibility_outlined,
+                                  color: AppColors.muted,
+                                ),
+                                onPressed: () =>
+                                    setState(() => _obscure = !_obscure),
+                              ),
+                              validator: (v) {
+                                if (v == null || v.isEmpty) {
+                                  return 'Vui lòng nhập mật khẩu';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 28),
+
+                            // Login button
+                            AgriButton.gradient(
+                              text: 'Đăng nhập',
+                              onPressed: _login,
+                              isLoading: isLoading,
+                              icon: Icons.login_rounded,
+                            ),
+                            const SizedBox(height: 20),
+
+                            // Register link
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text('Chưa có tài khoản? ',
+                                    style: AppTextStyles.caption
+                                        .copyWith(color: AppColors.muted)),
+                                GestureDetector(
+                                  onTap: () => Navigator.pushNamed(
+                                      context, AppRouter.register),
+                                  child: Text(
+                                    'Đăng ký ngay',
+                                    style: AppTextStyles.caption.copyWith(
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 32),
+
+                            // Trust indicators
+                            Center(
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.lock_outline_rounded,
+                                    size: 14,
+                                    color:
+                                        AppColors.muted.withValues(alpha: 0.6),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Bảo mật bởi AgriLink Server',
+                                    style: AppTextStyles.caption.copyWith(
+                                      color: AppColors.muted
+                                          .withValues(alpha: 0.6),
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

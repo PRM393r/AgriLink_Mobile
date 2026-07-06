@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
+import '../core/utils/page_transitions.dart';
 import '../screens/splash/splash_screen.dart';
 import '../screens/auth/login_screen.dart';
-import '../screens/auth/otp_screen.dart';
+import '../screens/auth/register_screen.dart';
+import '../screens/auth/verify_email_screen.dart';
 import '../screens/auth/role_picker_screen.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/cart/cart_screen.dart';
+import '../screens/checkout/checkout_screen.dart';
+import '../screens/checkout/order_success_screen.dart';
+import '../screens/orders/order_history_screen.dart';
+import '../screens/orders/order_detail_screen.dart';
+import '../screens/orders/seller_order_screen.dart';
 import '../screens/dashboard/customer/customer_dashboard_screen.dart';
 import '../screens/marketplace/marketplace_screen.dart';
 import '../screens/marketplace/product_detail_screen.dart';
@@ -19,10 +26,16 @@ class AppRouter {
 
   static const String splash = '/';
   static const String login = '/login';
-  static const String otp = '/otp';
+  static const String register = '/register';
+  static const String verifyEmail = '/verify-email';
   static const String rolePicker = '/role-picker';
   static const String home = '/home';
   static const String cart = '/cart';
+  static const String checkout = '/checkout';
+  static const String orderSuccess = '/order-success';
+  static const String orderHistory = '/order-history';
+  static const String orderDetail = '/order-detail';
+  static const String sellerOrders = '/seller-orders';
   static const String customer = '/customer';
   static const String marketplace = '/marketplace';
   static const String productDetail = '/product-detail';
@@ -36,31 +49,46 @@ class AppRouter {
       case splash:
         return MaterialPageRoute(builder: (_) => const SplashScreen());
       case login:
-        return MaterialPageRoute(builder: (_) => const LoginScreen());
-      case otp:
-        return MaterialPageRoute(builder: (_) => const OtpScreen());
-      case rolePicker:
-        return MaterialPageRoute(builder: (_) => const RolePickerScreen());
-      case home:
-        return MaterialPageRoute(builder: (_) => const HomeScreen());
-      case cart:
-        return MaterialPageRoute(builder: (_) => const CartScreen());
-      case customer:
-        return MaterialPageRoute(
-          builder: (_) => const CustomerDashboardScreen(),
+        return FadeScaleRoute(page: const LoginScreen());
+      case register:
+        return SlideRoute(page: const RegisterScreen());
+      case verifyEmail:
+        return SlideRoute(
+          page: const VerifyEmailScreen(),
         );
+      case rolePicker:
+        return FadeScaleRoute(page: const RolePickerScreen());
+      case home:
+        return FadeScaleRoute(page: const HomeScreen());
+      case cart:
+        return SlideUpRoute(page: const CartScreen());
+      case checkout:
+        return SlideRoute(page: const CheckoutScreen());
+      case orderSuccess:
+        return FadeScaleRoute(page: const OrderSuccessScreen());
+      case orderHistory:
+        return SlideRoute(page: const OrderHistoryScreen());
+      case orderDetail:
+        return SlideUpRoute(
+          page: const OrderDetailScreen(),
+        );
+      case sellerOrders:
+        return SlideRoute(page: const SellerOrderScreen());
+      case customer:
+        return FadeScaleRoute(
+            page: const CustomerDashboardScreen());
       case marketplace:
-        return MaterialPageRoute(builder: (_) => const MarketplaceScreen());
+        return SlideRoute(page: const MarketplaceScreen());
       case productDetail:
-        return MaterialPageRoute(builder: (_) => const ProductDetailScreen());
+        return SlideUpRoute(page: const ProductDetailScreen());
       case myProducts:
-        return MaterialPageRoute(builder: (_) => const MyProductsScreen());
+        return SlideRoute(page: const MyProductsScreen());
       case productForm:
-        return MaterialPageRoute(builder: (_) => const ProductFormScreen());
+        return SlideRoute(page: const ProductFormScreen());
       case wishlist:
-        return MaterialPageRoute(builder: (_) => const WishlistScreen());
+        return SlideRoute(page: const WishlistScreen());
       case editProfile:
-        return MaterialPageRoute(builder: (_) => const EditProfileScreen());
+        return SlideRoute(page: const EditProfileScreen());
       default:
         return MaterialPageRoute(
           builder: (_) => Scaffold(

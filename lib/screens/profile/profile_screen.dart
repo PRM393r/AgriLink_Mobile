@@ -67,8 +67,13 @@ class ProfileScreen extends StatelessWidget {
     final avatar = _avatarImage(user);
     final name = user?.fullName.trim().isNotEmpty == true
         ? user!.fullName.trim()
-        : 'Chưa cập nhật';
-    final phone = user?.phone.trim().isNotEmpty == true ? user!.phone : '';
+        : 'Chưa cập nhật tên';
+    final phone = (user?.phone?.trim().isNotEmpty == true)
+        ? user!.phone!
+        : '';
+    final email = user?.email.trim().isNotEmpty == true
+        ? user!.email.trim()
+        : 'Chưa cập nhật email';
     final role = user?.role ?? '';
 
     return Scaffold(
@@ -127,12 +132,17 @@ class ProfileScreen extends StatelessWidget {
                             Text(name,
                                 style: AppTextStyles.sectionTitle.copyWith(
                                     color: AppColors.canvas, fontSize: 18)),
+                            const SizedBox(height: 4),
+                            Text(email,
+                                style: AppTextStyles.caption.copyWith(
+                                    color: AppColors.canvas
+                                        .withValues(alpha: 0.7))),
                             if (phone.isNotEmpty) ...[
-                              const SizedBox(height: 4),
+                              const SizedBox(height: 2),
                               Text(phone,
                                   style: AppTextStyles.caption.copyWith(
                                       color: AppColors.canvas
-                                          .withValues(alpha: 0.7))),
+                                          .withValues(alpha: 0.6))),
                             ],
                             const SizedBox(height: 8),
                             Container(
@@ -192,7 +202,9 @@ class ProfileScreen extends StatelessWidget {
                     onTap: () => Navigator.pushNamed(
                         context, AppRouter.editProfile)),
                 _MenuItem(Icons.receipt_long_outlined, 'Lịch sử đơn hàng',
-                    AppColors.accent),
+                    AppColors.accent,
+                    onTap: () => Navigator.pushNamed(
+                        context, AppRouter.orderHistory)),
                 _MenuItem(
                     Icons.favorite_outline, 'Yêu thích', AppColors.error),
               ]),

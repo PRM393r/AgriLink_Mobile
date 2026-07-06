@@ -5,6 +5,8 @@ import '../../../core/constants/app_text_styles.dart';
 import '../../../core/constants/app_shadows.dart';
 import '../../../data/models/product_model.dart';
 import '../../../data/providers/cart_provider.dart';
+import '../../../data/repositories/product_repository.dart';
+import '../../../data/services/api_service.dart';
 import '../../../data/services/auth_provider.dart';
 import '../../../widgets/product/product_card.dart';
 import '../../../widgets/common/animated_list_item.dart';
@@ -21,6 +23,12 @@ class CustomerDashboardScreen extends StatefulWidget {
 class _CustomerDashboardScreenState extends State<CustomerDashboardScreen> {
   final PageController _bannerController = PageController();
   int _currentBannerIndex = 0;
+
+  late final ProductRepository _productRepo;
+  List<ProductModel> _featuredProducts = [];
+  List<ProductModel> _recentProducts = [];
+  bool _isLoading = true;
+  String? _error;
 
   final List<Map<String, dynamic>> _banners = const [
     {
@@ -58,133 +66,39 @@ class _CustomerDashboardScreenState extends State<CustomerDashboardScreen> {
     {'icon': "🍄", 'label': "Nấm"},
   ];
 
-  final List<ProductModel> _featuredProducts = [
-    ProductModel(
-      id: "f1",
-      name: "Cà chua bi organic",
-      description:
-          "Cà chua ngọt lịm trồng theo tiêu chuẩn hữu cơ tại Đà Lạt",
-      pricePerUnit: 35000,
-      unit: "kg",
-      availableQuantity: 150,
-      minOrderQuantity: 1,
-      farmingType: "Organic",
-      status: "active",
-      viewCount: 42,
-      sellerId: "seller_dalat_farm",
-      sellerType: "farmer",
-      images: const [],
-      certifications: const ["Organic"],
-      category: "Rau củ",
-    ),
-    ProductModel(
-      id: "f2",
-      name: "Gạo ST25",
-      description:
-          "Gạo đặc sản ST25 thơm ngon, dẻo ngọt đạt danh hiệu gạo ngon nhất thế giới",
-      pricePerUnit: 28000,
-      unit: "kg",
-      availableQuantity: 500,
-      minOrderQuantity: 5,
-      farmingType: "VietGAP",
-      status: "active",
-      viewCount: 120,
-      sellerId: "seller_an_giang_coop",
-      sellerType: "cooperative",
-      images: const [],
-      certifications: const ["VietGAP"],
-      category: "Lúa gạo",
-    ),
-    ProductModel(
-      id: "f3",
-      name: "Xoài cát Hòa Lộc",
-      description: "Xoài chín cây thơm lừng ngọt đậm đà vùng Tiền Giang",
-      pricePerUnit: 65000,
-      unit: "kg",
-      availableQuantity: 80,
-      minOrderQuantity: 1,
-      farmingType: "Organic",
-      status: "active",
-      viewCount: 76,
-      sellerId: "seller_tg_fruit",
-      sellerType: "farmer",
-      images: const [],
-      certifications: const ["Organic"],
-      category: "Trái cây",
-    ),
-    ProductModel(
-      id: "f4",
-      name: "Rau muống sạch",
-      description:
-          "Rau muống non mướt, giòn ngọt canh tác VietGAP tại Củ Chi",
-      pricePerUnit: 12000,
-      unit: "bó",
-      availableQuantity: 300,
-      minOrderQuantity: 1,
-      farmingType: "VietGAP",
-      status: "active",
-      viewCount: 50,
-      sellerId: "seller_cuchi_coop",
-      sellerType: "cooperative",
-      images: const [],
-      certifications: const ["VietGAP"],
-      category: "Rau củ",
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _productRepo = ProductRepository(ApiService());
+    _loadProducts();
+  }
 
-  final List<ProductModel> _recentProducts = [
-    ProductModel(
-      id: "r1",
-      name: "Cà rốt Đà Lạt",
-      description: "Cà rốt củ to ngọt, tươi ngon mới nhổ buổi sáng",
-      pricePerUnit: 22000,
-      unit: "kg",
-      availableQuantity: 200,
-      minOrderQuantity: 1,
-      farmingType: "VietGAP",
-      status: "active",
-      viewCount: 15,
-      sellerId: "seller_dalat_farm",
-      sellerType: "farmer",
-      images: const [],
-      certifications: const ["VietGAP"],
-      category: "Rau củ",
-    ),
-    ProductModel(
-      id: "r2",
-      name: "Dưa hấu Long An",
-      description: "Dưa hấu ruột đỏ ngọt lịm mọng nước đặc sản Long An",
-      pricePerUnit: 15000,
-      unit: "kg",
-      availableQuantity: 400,
-      minOrderQuantity: 2,
-      farmingType: "VietGAP",
-      status: "active",
-      viewCount: 29,
-      sellerId: "seller_la_fruit",
-      sellerType: "farmer",
-      images: const [],
-      certifications: const ["VietGAP"],
-      category: "Trái cây",
-    ),
-    ProductModel(
-      id: "r3",
-      name: "Nấm rơm sạch",
-      description: "Nấm rơm tự nhiên, béo ngọt dinh dưỡng cao",
-      pricePerUnit: 90000,
-      unit: "kg",
-      availableQuantity: 50,
-      minOrderQuantity: 0.5,
-      farmingType: "Organic",
-      status: "active",
-      viewCount: 61,
-      sellerId: "seller_cuchi_coop",
-      sellerType: "cooperative",
-      images: const [],
-      certifications: const ["Organic"],
-      category: "Rau củ",
-    ),
-  ];
+  Future<void> _loadProducts() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      final results = await Future.wait([
+        _productRepo.getProducts(limit: 4, sortBy: 'viewCount', order: 'DESC'),
+        _productRepo.getProducts(limit: 6, sortBy: 'createdAt', order: 'DESC'),
+      ]);
+      if (mounted) {
+        setState(() {
+          _featuredProducts = results[0];
+          _recentProducts = results[1];
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -202,238 +116,265 @@ class _CustomerDashboardScreenState extends State<CustomerDashboardScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.surfaceElevated,
-      body: CustomScrollView(
-        slivers: [
-          // ── Custom header with greeting + search ──
-          SliverToBoxAdapter(
-            child: Container(
-              padding: EdgeInsets.fromLTRB(
-                  20, MediaQuery.of(context).padding.top + 16, 20, 24),
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Color(0xFF1B4332),
-                    Color(0xFF2D6A4F),
-                    Color(0xFF40916C),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius:
-                    BorderRadius.vertical(bottom: Radius.circular(28)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Greeting row
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      body: _isLoading
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            )
+          : _error != null
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Xin chào, $displayName! 👋',
-                            style: AppTextStyles.sectionTitle.copyWith(
-                              color: AppColors.canvas,
-                              fontSize: 22,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Hôm nay bạn muốn mua gì?',
-                            style: AppTextStyles.subtitle.copyWith(
-                              color: AppColors.canvas.withValues(alpha: 0.75),
-                            ),
-                          ),
-                        ],
+                      const Icon(Icons.wifi_off, size: 48, color: AppColors.muted),
+                      const SizedBox(height: 12),
+                      Text('Không tải được sản phẩm', style: AppTextStyles.body),
+                      const SizedBox(height: 8),
+                      TextButton(
+                        onPressed: _loadProducts,
+                        child: const Text('Thử lại'),
                       ),
-                      // Cart icon
-                      GestureDetector(
-                        onTap: () =>
-                            Navigator.pushNamed(context, AppRouter.cart),
-                        child: Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: AppColors.canvas.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: const Icon(
-                                Icons.shopping_cart_outlined,
-                                color: AppColors.canvas,
-                                size: 22,
-                              ),
+                    ],
+                  ),
+                )
+              : RefreshIndicator(
+                  color: AppColors.primary,
+                  onRefresh: _loadProducts,
+                  child: CustomScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    slivers: [
+                      // ── Custom header with greeting + search ──
+                      SliverToBoxAdapter(
+                        child: Container(
+                          padding: EdgeInsets.fromLTRB(
+                              20, MediaQuery.of(context).padding.top + 16, 20, 24),
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Color(0xFF1B4332),
+                                Color(0xFF2D6A4F),
+                                Color(0xFF40916C),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
                             ),
-                            if (cartProvider.totalItems > 0)
-                              Positioned(
-                                right: -4,
-                                top: -4,
-                                child: Container(
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: const BoxDecoration(
-                                    color: AppColors.accentActive,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  constraints: const BoxConstraints(
-                                    minWidth: 18,
-                                    minHeight: 18,
-                                  ),
-                                  child: Text(
-                                    '${cartProvider.totalItems}',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
+                            borderRadius:
+                                BorderRadius.vertical(bottom: Radius.circular(28)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Greeting row
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Xin chào, $displayName! 👋',
+                                          style: AppTextStyles.sectionTitle.copyWith(
+                                            color: AppColors.canvas,
+                                            fontSize: 22,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'Hôm nay bạn muốn mua gì?',
+                                          style: AppTextStyles.subtitle.copyWith(
+                                            color: AppColors.canvas.withValues(alpha: 0.75),
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                    textAlign: TextAlign.center,
+                                  ),
+                                  // Cart icon
+                                  GestureDetector(
+                                    onTap: () =>
+                                        Navigator.pushNamed(context, AppRouter.cart),
+                                    child: Stack(
+                                      clipBehavior: Clip.none,
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(10),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.canvas.withValues(alpha: 0.15),
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          child: const Icon(
+                                            Icons.shopping_cart_outlined,
+                                            color: AppColors.canvas,
+                                            size: 22,
+                                          ),
+                                        ),
+                                        if (cartProvider.totalItems > 0)
+                                          Positioned(
+                                            right: -4,
+                                            top: -4,
+                                            child: Container(
+                                              padding: const EdgeInsets.all(4),
+                                              decoration: const BoxDecoration(
+                                                color: AppColors.accentActive,
+                                                shape: BoxShape.circle,
+                                              ),
+                                              constraints: const BoxConstraints(
+                                                minWidth: 18,
+                                                minHeight: 18,
+                                              ),
+                                              child: Text(
+                                                '${cartProvider.totalItems}',
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                                textAlign: TextAlign.center,
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 20),
+                              // Search bar
+                              GestureDetector(
+                                onTap: () =>
+                                    Navigator.pushNamed(context, AppRouter.marketplace),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 12),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.canvas.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(
+                                      color: AppColors.canvas.withValues(alpha: 0.1),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.search_rounded,
+                                          color: AppColors.canvas.withValues(alpha: 0.7),
+                                          size: 20),
+                                      const SizedBox(width: 10),
+                                      Text(
+                                        'Tìm kiếm nông sản sạch...',
+                                        style: AppTextStyles.subtitle.copyWith(
+                                          color: AppColors.canvas.withValues(alpha: 0.6),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  // Search bar
-                  GestureDetector(
-                    onTap: () =>
-                        Navigator.pushNamed(context, AppRouter.marketplace),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: AppColors.canvas.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: AppColors.canvas.withValues(alpha: 0.1),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.search_rounded,
-                              color: AppColors.canvas.withValues(alpha: 0.7),
-                              size: 20),
-                          const SizedBox(width: 10),
-                          Text(
-                            'Tìm kiếm nông sản sạch...',
-                            style: AppTextStyles.subtitle.copyWith(
-                              color: AppColors.canvas.withValues(alpha: 0.6),
-                            ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // ── Banners ──
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.only(top: 20),
-              child: _buildBanners(),
-            ),
-          ),
-
-          // ── Categories ──
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.only(top: 24),
-              child: _buildCategories(),
-            ),
-          ),
-
-          // ── Featured products header ──
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 28, 20, 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        'Sản phẩm nổi bật',
-                        style: AppTextStyles.sectionTitle.copyWith(
-                          fontSize: 18,
                         ),
                       ),
-                      const SizedBox(width: 6),
-                      const Text('🔥', style: TextStyle(fontSize: 16)),
+
+                      // ── Banners ──
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 20),
+                          child: _buildBanners(),
+                        ),
+                      ),
+
+                      // ── Categories ──
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 24),
+                          child: _buildCategories(),
+                        ),
+                      ),
+
+                      // ── Featured products header ──
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 28, 20, 12),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    'Sản phẩm nổi bật',
+                                    style: AppTextStyles.sectionTitle.copyWith(
+                                      fontSize: 18,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  const Text('🔥', style: TextStyle(fontSize: 16)),
+                                ],
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.pushNamed(context, AppRouter.marketplace);
+                                },
+                                child: Text(
+                                  'Xem tất cả',
+                                  style: AppTextStyles.subtitle.copyWith(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      // ── Featured grid ──
+                      SliverPadding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        sliver: SliverGrid(
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                            childAspectRatio: 0.68,
+                          ),
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) {
+                              final product = _featuredProducts[index];
+                              return AnimatedListItem(
+                                index: index,
+                                child: ProductCard(
+                                  product: product,
+                                  onTap: () {
+                                    Navigator.pushNamed(
+                                      context,
+                                      AppRouter.productDetail,
+                                      arguments: product,
+                                    );
+                                  },
+                                ),
+                              );
+                            },
+                            childCount: _featuredProducts.length,
+                          ),
+                        ),
+                      ),
+
+                      // ── Recent products header ──
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 28, 20, 12),
+                          child: Text(
+                            'Mới đăng gần đây ✨',
+                            style: AppTextStyles.sectionTitle.copyWith(fontSize: 18),
+                          ),
+                        ),
+                      ),
+
+                      // ── Recent horizontal list ──
+                      SliverToBoxAdapter(child: _buildRecentList()),
+
+                      const SliverToBoxAdapter(child: SizedBox(height: 32)),
                     ],
                   ),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pushNamed(context, AppRouter.marketplace);
-                    },
-                    child: Text(
-                      'Xem tất cả',
-                      style: AppTextStyles.subtitle.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // ── Featured grid ──
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 0.68,
-              ),
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final product = _featuredProducts[index];
-                  return AnimatedListItem(
-                    index: index,
-                    child: ProductCard(
-                      product: product,
-                      onTap: () {
-                        Navigator.pushNamed(
-                          context,
-                          AppRouter.productDetail,
-                          arguments: product,
-                        );
-                      },
-                    ),
-                  );
-                },
-                childCount: _featuredProducts.length,
-              ),
-            ),
-          ),
-
-          // ── Recent products header ──
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 28, 20, 12),
-              child: Text(
-                'Mới đăng gần đây ✨',
-                style: AppTextStyles.sectionTitle.copyWith(fontSize: 18),
-              ),
-            ),
-          ),
-
-          // ── Recent horizontal list ──
-          SliverToBoxAdapter(child: _buildRecentList()),
-
-          const SliverToBoxAdapter(child: SizedBox(height: 32)),
-        ],
-      ),
+                ),
     );
   }
 

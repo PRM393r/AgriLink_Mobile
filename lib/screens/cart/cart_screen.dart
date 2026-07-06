@@ -192,17 +192,10 @@ class CartScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 16),
                         AgriButton.gradient(
-                          text: 'Đặt hàng',
+                          text: 'Tiến hành đặt hàng',
                           icon: Icons.shopping_bag_rounded,
                           onPressed: () {
-                            cartProvider.clearCart();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Đặt hàng thành công! 🎉'),
-                                backgroundColor: AppColors.primary,
-                              ),
-                            );
-                            Navigator.pop(context);
+                            Navigator.pushNamed(context, AppRouter.checkout);
                           },
                         ),
                       ],

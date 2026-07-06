@@ -10,6 +10,8 @@ import '../dashboard/supplier/supplier_dashboard_screen.dart';
 import '../dashboard/customer/customer_dashboard_screen.dart';
 import '../marketplace/marketplace_screen.dart';
 import '../cart/cart_screen.dart';
+import '../orders/order_history_screen.dart';
+import '../orders/seller_order_screen.dart';
 import '../profile/profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -39,6 +41,7 @@ class _HomeScreenState extends State<HomeScreen> {
         const CustomerDashboardScreen(),
         const MarketplaceScreen(),
         const CartScreen(),
+        const OrderHistoryScreen(),
         const ProfileScreen(),
       ]);
 
@@ -60,6 +63,11 @@ class _HomeScreenState extends State<HomeScreen> {
           badgeCount: cartProvider.totalItems,
         ),
         const _NavItem(
+          icon: Icons.receipt_long_outlined,
+          activeIcon: Icons.receipt_long_rounded,
+          label: 'Đơn hàng',
+        ),
+        const _NavItem(
           icon: Icons.person_outline_rounded,
           activeIcon: Icons.person_rounded,
           label: 'Tài khoản',
@@ -72,7 +80,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ? const FarmerDashboardScreen()
             : const SupplierDashboardScreen(),
         const MarketplaceScreen(),
-        _buildOrdersTab(role),
+        const SellerOrderScreen(),
         const ProfileScreen(),
       ]);
 
@@ -212,135 +220,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildOrdersTab(String role) {
-    final title = role == 'farmer' ? 'Đơn hàng nông sản' : 'Đơn hàng vật tư';
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(title, style: AppTextStyles.sectionTitle),
-        backgroundColor: AppColors.canvas,
-        elevation: 0,
-      ),
-      body: Container(
-        color: AppColors.surfaceElevated,
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Danh sách đơn hàng nhận được',
-              style: AppTextStyles.subtitle.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: ListView(
-                children: [
-                  _buildOrderCard(
-                    'ORD-2201',
-                    'Hoàn thành',
-                    'Gạo ST25',
-                    '100 kg',
-                    '2,800,000đ',
-                    'Đã giao thành công cho khách hàng',
-                  ),
-                  _buildOrderCard(
-                    'ORD-2202',
-                    'Đang giao',
-                    'Xoài cát Hòa Lộc',
-                    '20 kg',
-                    '1,300,000đ',
-                    'Đang trên đường vận chuyển',
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildOrderCard(
-    String code,
-    String status,
-    String item,
-    String qty,
-    String total,
-    String note,
-  ) {
-    final statusColor =
-        status == 'Hoàn thành' ? AppColors.success : AppColors.accent;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.canvas,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.surfaceDivider.withValues(alpha: 0.3),
-        ),
-        boxShadow: AppShadows.card,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                code,
-                style: AppTextStyles.subtitle.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  status,
-                  style: AppTextStyles.badge.copyWith(
-                    color: statusColor,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            item,
-            style: AppTextStyles.body.copyWith(
-              fontWeight: FontWeight.w600,
-              color: AppColors.ink,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Số lượng: $qty | Tổng cộng: $total',
-            style: AppTextStyles.caption.copyWith(color: AppColors.body),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            note,
-            style: AppTextStyles.caption.copyWith(
-              color: AppColors.muted,
-              fontStyle: FontStyle.italic,
-            ),
-          ),
-        ],
       ),
     );
   }

@@ -5,6 +5,7 @@ import '../../core/constants/app_text_styles.dart';
 import '../../core/constants/app_shadows.dart';
 import '../../data/services/auth_provider.dart';
 import '../../data/providers/cart_provider.dart';
+import '../../data/providers/wishlist_provider.dart';
 import '../dashboard/farmer/farmer_dashboard_screen.dart';
 import '../dashboard/supplier/supplier_dashboard_screen.dart';
 import '../dashboard/customer/customer_dashboard_screen.dart';
@@ -30,6 +31,11 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: _currentIndex);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<WishlistProvider>().fetchWishlistIds();
+      }
+    });
   }
 
   @override

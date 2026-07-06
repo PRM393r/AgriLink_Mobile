@@ -11,6 +11,7 @@ import 'data/services/api_service.dart';
 import 'data/repositories/product_repository.dart';
 import 'data/services/product_service.dart';
 import 'data/services/wishlist_service.dart';
+import 'data/providers/wishlist_provider.dart';
 import 'data/repositories/order_repository.dart';
 import 'data/services/order_service.dart';
 
@@ -31,6 +32,10 @@ void main() async {
         ),
         ProxyProvider<ApiService, WishlistService>(
           update: (_, api, __) => WishlistService(api),
+        ),
+        ChangeNotifierProxyProvider<WishlistService, WishlistProvider>(
+          create: (_) => WishlistProvider(WishlistService(ApiService())),
+          update: (_, service, provider) => provider ?? WishlistProvider(service),
         ),
         ProxyProvider<ApiService, OrderRepository>(
           update: (_, api, __) => OrderRepository(api),

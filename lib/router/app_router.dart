@@ -19,7 +19,7 @@ import '../screens/profile/edit_profile_screen.dart';
 
 import '../screens/dashboard/farmer/my_products_screen.dart';
 import '../screens/dashboard/farmer/product_form_screen.dart';
-import '../screens/marketplace/wishlist_screen.dart';
+import '../screens/wishlist/wishlist_screen.dart';
 
 class AppRouter {
   const AppRouter._();

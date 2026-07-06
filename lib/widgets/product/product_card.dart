@@ -6,6 +6,7 @@ import '../../core/constants/app_shadows.dart';
 import '../../data/models/product_model.dart';
 import '../../data/services/auth_provider.dart';
 import '../../data/providers/cart_provider.dart';
+import '../../data/providers/wishlist_provider.dart';
 
 class ProductCard extends StatelessWidget {
   final ProductModel product;
@@ -120,21 +121,34 @@ class ProductCard extends StatelessWidget {
                       Positioned(
                         top: 8,
                         right: 8,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.8),
-                            shape: BoxShape.circle,
-                          ),
-                          child: IconButton(
-                            icon: const Icon(Icons.favorite_border, size: 20, color: AppColors.error),
-                            onPressed: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Đã thêm vào yêu thích!'), duration: Duration(seconds: 1)),
-                              );
-                            },
-                            constraints: const BoxConstraints(),
-                            padding: const EdgeInsets.all(6),
-                          ),
+                        child: Consumer<WishlistProvider>(
+                          builder: (context, wishlistProvider, child) {
+                            final isWishlisted = wishlistProvider.isWishlisted(product.id);
+                            return Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.8),
+                                shape: BoxShape.circle,
+                              ),
+                              child: IconButton(
+                                icon: Icon(
+                                  isWishlisted ? Icons.favorite : Icons.favorite_border,
+                                  size: 20,
+                                  color: AppColors.error,
+                                ),
+                                onPressed: () {
+                                  wishlistProvider.toggleWishlist(product.id);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(isWishlisted ? 'Đã bỏ yêu thích!' : 'Đã thêm vào yêu thích!'),
+                                      duration: const Duration(seconds: 1),
+                                    ),
+                                  );
+                                },
+                                constraints: const BoxConstraints(),
+                                padding: const EdgeInsets.all(6),
+                              ),
+                            );
+                          },
                         ),
                       ),
                   ],

@@ -79,8 +79,8 @@ class ProfileScreen extends StatelessWidget {
     final displayName = user?.fullName.trim().isNotEmpty == true
         ? user!.fullName.trim()
         : 'Chưa cập nhật tên';
-    final phone = user?.phone.trim().isNotEmpty == true
-        ? user!.phone
+    final phone = (user?.phone?.trim().isNotEmpty == true)
+        ? user!.phone!
         : 'Chưa có';
     final email = user?.email?.trim().isNotEmpty == true
         ? user!.email!.trim()

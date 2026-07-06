@@ -41,7 +41,6 @@ class _HomeScreenState extends State<HomeScreen> {
         const MarketplaceScreen(),
         const CartScreen(),
         const OrderHistoryScreen(),
-        _buildProfileTab(role, authProvider.currentUser?.phone ?? ''),
         const ProfileScreen(),
       ]);
 
@@ -140,8 +139,6 @@ class _HomeScreenState extends State<HomeScreen> {
             : const SupplierDashboardScreen(),
         const MarketplaceScreen(),
         const SellerOrderScreen(),
-        _buildProfileTab(role, authProvider.currentUser?.phone ?? ''),
-        _buildOrdersTab(role),
         const ProfileScreen(),
       ]);
 

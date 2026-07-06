@@ -9,8 +9,7 @@ class AuthRepository {
 
   AuthRepository(this._apiService);
 
-  // ── POST /auth/register ───────────────────────────────────────���──────────
-  /// Tạo tài khoản mới, BE gửi OTP về email.
+  // ── POST /auth/register ──────────────────────────────────────────────────
   Future<void> register({
     required String email,
     required String password,
@@ -29,19 +28,15 @@ class AuthRepository {
   }
 
   // ── POST /auth/verify-email ──────────────────────────────────────────────
-  /// Xác nhận OTP email. BE trả accessToken + refreshToken sau khi verify.
-  Future<Map<String, String>> verifyEmail({
+  Future<void> verifyEmail({
     required String email,
     required String code,
   }) async {
     try {
-      final response = await _apiService.post(
+      await _apiService.post(
         ApiConstants.verifyEmail,
         data: {'email': email, 'code': code},
       );
-      // BE chỉ trả { statusCode, data: null, message } — không trả token ở bước này.
-      // Token có sau bước login.
-      return {};
     } on DioException catch (e) {
       throw Exception(e.error ?? 'Xác thực email thất bại');
     } catch (e) {
@@ -64,7 +59,6 @@ class AuthRepository {
   }
 
   // ── POST /auth/login ─────────────────────────────────────────────────────
-  /// Đăng nhập email + password → lưu token, trả UserModel.
   Future<UserModel> login({
     required String email,
     required String password,
@@ -82,12 +76,8 @@ class AuthRepository {
       final refreshToken = data['refreshToken'] as String? ?? '';
       final userJson     = data['user']         as Map<String, dynamic>? ?? {};
 
-      if (accessToken.isNotEmpty) {
-        await TokenStorage.saveToken(accessToken);
-      }
-      if (refreshToken.isNotEmpty) {
-        await TokenStorage.saveRefreshToken(refreshToken);
-      }
+      if (accessToken.isNotEmpty)  await TokenStorage.saveToken(accessToken);
+      if (refreshToken.isNotEmpty) await TokenStorage.saveRefreshToken(refreshToken);
 
       return UserModel.fromJson(userJson);
     } on DioException catch (e) {
@@ -112,17 +102,37 @@ class AuthRepository {
     }
   }
 
+  // ── PATCH /users/me ──────────────────────────────────────────────────────
+  Future<UserModel> updateProfile({
+    String? fullName,
+    String? email,
+    String? avatarUrl,
+  }) async {
+    try {
+      final body = <String, dynamic>{};
+      if (fullName != null)  body['fullName']  = fullName;
+      if (email != null)     body['email']     = email;
+      if (avatarUrl != null) body['avatarUrl'] = avatarUrl;
+
+      final response = await _apiService.patch(ApiConstants.updateMe, data: body);
+      final envelope = response.data as Map<String, dynamic>?;
+      final data = envelope?['data'] as Map<String, dynamic>?;
+      if (data == null) throw Exception('Cập nhật hồ sơ thất bại');
+      return UserModel.fromJson(data);
+    } on DioException catch (e) {
+      throw Exception(e.error ?? 'Cập nhật hồ sơ thất bại');
+    } catch (e) {
+      throw Exception('Lỗi cập nhật hồ sơ: $e');
+    }
+  }
+
   // ── PUT /users/me/role ───────────────────────────────────────────────────
   Future<UserModel> updateRole(String role) async {
     try {
-      final response = await _apiService.put(
+      await _apiService.put(
         ApiConstants.updateRole,
         data: {'role': role},
       );
-      final envelope = response.data as Map<String, dynamic>?;
-      final data = envelope?['data'] as Map<String, dynamic>?;
-      if (data == null) throw Exception('Cập nhật vai trò thất bại');
-      // BE chỉ trả { role } — merge vào currentUser ở provider
       return getMe();
     } on DioException catch (e) {
       throw Exception(e.error ?? 'Cập nhật vai trò thất bại');
@@ -163,27 +173,6 @@ class AuthRepository {
     } finally {
       await TokenStorage.deleteToken();
       await TokenStorage.deleteRefreshToken();
-  /// Updates the authenticated user's profile on the NestJS backend.
-  Future<UserModel> updateProfile({
-    String? fullName,
-    String? email,
-    String? avatarUrl,
-  }) async {
-    try {
-      final response = await _apiService.patch(
-        ApiConstants.updateMe,
-        data: {'fullName': ?fullName, 'email': ?email, 'avatarUrl': ?avatarUrl},
-      );
-
-      final data = response.data;
-      if (data is Map<String, dynamic> && data['data'] != null) {
-        return UserModel.fromJson(data['data'] as Map<String, dynamic>);
-      }
-      throw Exception('Cập nhật hồ sơ thất bại');
-    } on DioException catch (e) {
-      throw Exception(e.error ?? 'Cập nhật hồ sơ thất bại');
-    } catch (e) {
-      throw Exception('Lỗi cập nhật hồ sơ: $e');
     }
   }
 }

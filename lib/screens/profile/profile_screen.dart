@@ -12,7 +12,6 @@ class ProfileScreen extends StatelessWidget {
 
   Future<void> _handleLogout(BuildContext context) async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -25,26 +24,18 @@ class ProfileScreen extends StatelessWidget {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text(
-              AppStrings.logout,
-              style: TextStyle(
-                color: AppColors.error,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            child: Text(AppStrings.logout,
+                style: TextStyle(
+                    color: AppColors.error, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
     );
-
     if (confirm == true) {
       await authProvider.logout();
       if (context.mounted) {
         Navigator.pushNamedAndRemoveUntil(
-          context,
-          AppRouter.login,
-          (route) => false,
-        );
+            context, AppRouter.login, (route) => false);
       }
     }
   }
@@ -52,206 +43,293 @@ class ProfileScreen extends StatelessWidget {
   String _roleLabel(String role) {
     switch (role) {
       case 'farmer':
-        return 'Nông dân';
+        return '🌾 Nông dân';
       case 'supplier':
-        return 'Nhà cung cấp';
+        return '📦 Nhà cung cấp';
       case 'customer':
       case 'buyer':
-        return 'Người mua';
+        return '🛒 Người mua';
       default:
-        return 'Chưa chọn vai trò';
+        return 'Chưa chọn';
     }
   }
 
   ImageProvider? _avatarImage(UserModel? user) {
-    final avatarUrl = user?.avatarUrl;
-    if (avatarUrl == null || avatarUrl.trim().isEmpty) {
-      return null;
-    }
-    return NetworkImage(avatarUrl.trim());
+    final url = user?.avatarUrl;
+    if (url == null || url.trim().isEmpty) return null;
+    return NetworkImage(url.trim());
   }
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
-    final user = authProvider.currentUser;
-    final avatarImage = _avatarImage(user);
-    final displayName = user?.fullName.trim().isNotEmpty == true
+    final auth = Provider.of<AuthProvider>(context);
+    final user = auth.currentUser;
+    final avatar = _avatarImage(user);
+    final name = user?.fullName.trim().isNotEmpty == true
         ? user!.fullName.trim()
         : 'Chưa cập nhật tên';
     final phone = (user?.phone?.trim().isNotEmpty == true)
         ? user!.phone!
-        : 'Chưa có';
-    final email = user?.email?.trim().isNotEmpty == true
-        ? user!.email!.trim()
+        : '';
+    final email = user?.email.trim().isNotEmpty == true
+        ? user!.email.trim()
         : 'Chưa cập nhật email';
     final role = user?.role ?? '';
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Tài khoản của tôi',
-          style: TextStyle(color: AppColors.ink),
-        ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-      ),
-      body: Container(
-        color: AppColors.surfaceSoft,
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            const SizedBox(height: 20),
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 6,
-                    offset: Offset(0, 3),
+      backgroundColor: AppColors.surfaceElevated,
+      body: CustomScrollView(
+        slivers: [
+          // ── Gradient header ──
+          SliverToBoxAdapter(
+            child: Container(
+              padding: EdgeInsets.fromLTRB(
+                  24, MediaQuery.of(context).padding.top + 20, 24, 28),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF1B4332), Color(0xFF2D6A4F), Color(0xFF40916C)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius:
+                    BorderRadius.vertical(bottom: Radius.circular(28)),
+              ),
+              child: Column(
+                children: [
+                  // Title row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Tài khoản',
+                          style: AppTextStyles.sectionTitle
+                              .copyWith(color: AppColors.canvas)),
+                      IconButton(
+                        icon: const Icon(Icons.settings_outlined,
+                            color: AppColors.canvas),
+                        onPressed: () {},
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  // Avatar + info
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 36,
+                        backgroundColor:
+                            AppColors.canvas.withValues(alpha: 0.2),
+                        backgroundImage: avatar,
+                        child: avatar == null
+                            ? const Icon(Icons.person_rounded,
+                                size: 40, color: AppColors.canvas)
+                            : null,
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(name,
+                                style: AppTextStyles.sectionTitle.copyWith(
+                                    color: AppColors.canvas, fontSize: 18)),
+                            const SizedBox(height: 4),
+                            Text(email,
+                                style: AppTextStyles.caption.copyWith(
+                                    color: AppColors.canvas
+                                        .withValues(alpha: 0.7))),
+                            if (phone.isNotEmpty) ...[
+                              const SizedBox(height: 2),
+                              Text(phone,
+                                  style: AppTextStyles.caption.copyWith(
+                                      color: AppColors.canvas
+                                          .withValues(alpha: 0.6))),
+                            ],
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color:
+                                    AppColors.canvas.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(_roleLabel(role),
+                                  style: AppTextStyles.badge.copyWith(
+                                      color: AppColors.canvas,
+                                      fontSize: 11)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
+            ),
+          ),
+
+          // ── Quick stats ──
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
               child: Row(
                 children: [
-                  CircleAvatar(
-                    radius: 36,
-                    backgroundColor: AppColors.primaryUltraLight,
-                    backgroundImage: avatarImage,
-                    child: avatarImage == null
-                        ? const Icon(
-                            Icons.person,
-                            size: 44,
-                            color: AppColors.primary,
-                          )
-                        : null,
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          displayName,
-                          style: AppTextStyles.sectionTitle.copyWith(
-                            fontSize: 18,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Số điện thoại: $phone',
-                          style: AppTextStyles.body.copyWith(
-                            color: AppColors.muted,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          email,
-                          style: AppTextStyles.caption.copyWith(
-                            color: AppColors.body,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.primaryUltraLight,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            _roleLabel(role),
-                            style: AppTextStyles.caption.copyWith(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  _statItem('0', 'Đơn hàng'),
+                  _statDivider(),
+                  _statItem('0', 'Yêu thích'),
+                  _statDivider(),
+                  _statItem('0', 'Điểm'),
                 ],
               ),
             ),
-            const SizedBox(height: 32),
-            _buildProfileItem(
-              context,
-              Icons.edit_outlined,
-              'Chỉnh sửa hồ sơ',
-              onTap: () => Navigator.pushNamed(context, AppRouter.editProfile),
+          ),
+
+          // ── Menu sections ──
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+              child: Text('Tài khoản',
+                  style: AppTextStyles.overline.copyWith(
+                      color: AppColors.muted, letterSpacing: 1.0)),
             ),
-            _buildProfileItem(
-              context,
-              Icons.security_outlined,
-              'Bảo mật & Quyền riêng tư',
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: _menuGroup([
+                _MenuItem(Icons.edit_outlined, 'Chỉnh sửa hồ sơ',
+                    AppColors.primary,
+                    onTap: () => Navigator.pushNamed(
+                        context, AppRouter.editProfile)),
+                _MenuItem(Icons.receipt_long_outlined, 'Lịch sử đơn hàng',
+                    AppColors.accent,
+                    onTap: () => Navigator.pushNamed(
+                        context, AppRouter.orderHistory)),
+                _MenuItem(
+                    Icons.favorite_outline, 'Yêu thích', AppColors.error),
+              ]),
             ),
-            _buildProfileItem(
-              context,
-              Icons.help_outline_outlined,
-              'Trung tâm hỗ trợ',
+          ),
+
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
+              child: Text('Hỗ trợ',
+                  style: AppTextStyles.overline.copyWith(
+                      color: AppColors.muted, letterSpacing: 1.0)),
             ),
-            const Spacer(),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: authProvider.isLoading
-                    ? null
-                    : () => _handleLogout(context),
-                icon: const Icon(Icons.logout, color: Colors.white),
-                label: const Text(
-                  'Đăng xuất',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: Colors.white,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.error,
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: _menuGroup([
+                _MenuItem(Icons.help_outline_rounded, 'Trung tâm hỗ trợ',
+                    AppColors.info),
+                _MenuItem(Icons.security_outlined, 'Bảo mật & Quyền riêng tư',
+                    AppColors.warning),
+                _MenuItem(Icons.info_outline_rounded, 'Về AgriLink',
+                    AppColors.primaryLight),
+              ]),
+            ),
+          ),
+
+          // ── Logout ──
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+              child: OutlinedButton.icon(
+                onPressed:
+                    auth.isLoading ? null : () => _handleLogout(context),
+                icon: const Icon(Icons.logout_rounded,
+                    color: AppColors.error, size: 20),
+                label: Text('Đăng xuất',
+                    style: AppTextStyles.button
+                        .copyWith(color: AppColors.error)),
+                style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14),
+                  side: BorderSide(
+                      color: AppColors.error.withValues(alpha: 0.3)),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                      borderRadius: BorderRadius.circular(14)),
                 ),
               ),
             ),
-            const SizedBox(height: 20),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildProfileItem(
-    BuildContext context,
-    IconData icon,
-    String title, {
-    VoidCallback? onTap,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: ListTile(
-        leading: Icon(icon, color: AppColors.primary),
-        title: Text(
-          title,
-          style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w600),
-        ),
-        trailing: const Icon(
-          Icons.arrow_forward_ios,
-          size: 14,
-          color: AppColors.muted,
-        ),
-        onTap: onTap,
+  Widget _statItem(String value, String label) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text(value,
+              style: AppTextStyles.sectionTitle
+                  .copyWith(fontSize: 20, color: AppColors.ink)),
+          const SizedBox(height: 2),
+          Text(label,
+              style: AppTextStyles.caption.copyWith(fontSize: 12)),
+        ],
       ),
     );
   }
+
+  Widget _statDivider() {
+    return Container(
+        width: 1,
+        height: 30,
+        color: AppColors.surfaceDivider.withValues(alpha: 0.4));
+  }
+
+  Widget _menuGroup(List<_MenuItem> items) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.canvas,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+            color: AppColors.surfaceDivider.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        children: items.asMap().entries.map((e) {
+          final item = e.value;
+          final isLast = e.key == items.length - 1;
+          return Column(
+            children: [
+              ListTile(
+                leading: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: item.color.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(item.icon, color: item.color, size: 20),
+                ),
+                title: Text(item.label,
+                    style: AppTextStyles.subtitle
+                        .copyWith(fontWeight: FontWeight.w500)),
+                trailing: const Icon(Icons.arrow_forward_ios_rounded,
+                    size: 14, color: AppColors.muted),
+                onTap: item.onTap,
+              ),
+              if (!isLast)
+                Divider(
+                    height: 1,
+                    indent: 60,
+                    color: AppColors.surfaceDivider.withValues(alpha: 0.3)),
+            ],
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+class _MenuItem {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback? onTap;
+  const _MenuItem(this.icon, this.label, this.color, {this.onTap});
 }

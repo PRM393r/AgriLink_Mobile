@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/utils/page_transitions.dart';
 import '../screens/splash/splash_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
@@ -41,43 +42,41 @@ class AppRouter {
       case splash:
         return MaterialPageRoute(builder: (_) => const SplashScreen());
       case login:
-        return MaterialPageRoute(builder: (_) => const LoginScreen());
+        return FadeScaleRoute(page: const LoginScreen());
       case register:
-        return MaterialPageRoute(builder: (_) => const RegisterScreen());
+        return SlideRoute(page: const RegisterScreen());
       case verifyEmail:
-        return MaterialPageRoute(
-          builder: (_) => const VerifyEmailScreen(),
-          settings: settings,
+        return SlideRoute(
+          page: const VerifyEmailScreen(),
         );
       case rolePicker:
-        return MaterialPageRoute(builder: (_) => const RolePickerScreen());
+        return FadeScaleRoute(page: const RolePickerScreen());
       case home:
-        return MaterialPageRoute(builder: (_) => const HomeScreen());
+        return FadeScaleRoute(page: const HomeScreen());
       case cart:
-        return MaterialPageRoute(builder: (_) => const CartScreen());
+        return SlideUpRoute(page: const CartScreen());
       case checkout:
-        return MaterialPageRoute(builder: (_) => const CheckoutScreen());
+        return SlideRoute(page: const CheckoutScreen());
       case orderSuccess:
-        return MaterialPageRoute(builder: (_) => const OrderSuccessScreen());
+        return FadeScaleRoute(page: const OrderSuccessScreen());
       case orderHistory:
-        return MaterialPageRoute(builder: (_) => const OrderHistoryScreen());
+        return SlideRoute(page: const OrderHistoryScreen());
       case orderDetail:
-        return MaterialPageRoute(
-          builder: (_) => const OrderDetailScreen(),
-          settings: settings,
+        return SlideUpRoute(
+          page: const OrderDetailScreen(),
         );
       case sellerOrders:
-        return MaterialPageRoute(builder: (_) => const SellerOrderScreen());
+        return SlideRoute(page: const SellerOrderScreen());
       case customer:
-        return MaterialPageRoute(
-          builder: (_) => const CustomerDashboardScreen(),
-        );
+        return FadeScaleRoute(
+            page: const CustomerDashboardScreen());
       case marketplace:
-        return MaterialPageRoute(builder: (_) => const MarketplaceScreen());
+        return SlideRoute(page: const MarketplaceScreen());
       case productDetail:
-        return MaterialPageRoute(builder: (_) => const ProductDetailScreen());
+        return SlideUpRoute(
+            page: const ProductDetailScreen());
       case editProfile:
-        return MaterialPageRoute(builder: (_) => const EditProfileScreen());
+        return SlideRoute(page: const EditProfileScreen());
       default:
         return MaterialPageRoute(
           builder: (_) => Scaffold(

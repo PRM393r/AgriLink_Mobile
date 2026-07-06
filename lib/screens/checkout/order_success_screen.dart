@@ -102,7 +102,7 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
                     // Nút về trang chủ
                     AgriButton(
                       text: 'Về trang chủ',
-                      isSecondary: true,
+                      variant: AgriButtonVariant.outlined,
                       onPressed: () {
                         Navigator.pushNamedAndRemoveUntil(
                           context,

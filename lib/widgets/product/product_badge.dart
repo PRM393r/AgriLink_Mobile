@@ -16,19 +16,16 @@ class ProductBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = backgroundColor ?? AppColors.primaryUltraLight;
-    final textCol = textColor ?? AppColors.primary;
-
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(100), // Pill shape as requested in Border Radius guidelines
+        color: backgroundColor ?? AppColors.surfaceSoft,
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
         label,
-        style: AppTextStyles.caption.copyWith(
-          color: textCol,
+        style: AppTextStyles.badge.copyWith(
+          color: textColor ?? AppColors.muted,
           fontWeight: FontWeight.w600,
         ),
       ),

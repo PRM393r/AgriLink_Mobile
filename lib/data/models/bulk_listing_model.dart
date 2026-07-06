@@ -43,8 +43,12 @@ class BulkListingModel {
       pricePerUnit: (json['pricePerUnit'] as num?)?.toDouble() ?? 0.0,
       farmingType: json['farmingType'] as String? ?? 'organic',
       provinceId: json['provinceId'] as String? ?? '',
-      harvestDateFrom: json['harvestDateFrom'] != null ? DateTime.tryParse(json['harvestDateFrom'] as String) : null,
-      harvestDateTo: json['harvestDateTo'] != null ? DateTime.tryParse(json['harvestDateTo'] as String) : null,
+      harvestDateFrom: json['harvestDateFrom'] != null
+          ? DateTime.tryParse(json['harvestDateFrom'] as String)
+          : null,
+      harvestDateTo: json['harvestDateTo'] != null
+          ? DateTime.tryParse(json['harvestDateTo'] as String)
+          : null,
       status: json['status'] as String? ?? 'pending',
       contributions: json['contributions'] as List<dynamic>? ?? const [],
     );

@@ -11,12 +11,12 @@ import 'data/services/api_service.dart';
 import 'data/repositories/product_repository.dart';
 import 'data/services/product_service.dart';
 import 'data/services/wishlist_service.dart';
+import 'data/repositories/order_repository.dart';
+import 'data/services/order_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(
     MultiProvider(
       providers: [
@@ -31,6 +31,12 @@ void main() async {
         ),
         ProxyProvider<ApiService, WishlistService>(
           update: (_, api, __) => WishlistService(api),
+        ),
+        ProxyProvider<ApiService, OrderRepository>(
+          update: (_, api, __) => OrderRepository(api),
+        ),
+        ProxyProvider<OrderRepository, OrderService>(
+          update: (_, repo, __) => OrderService(repo),
         ),
       ],
       child: const AgriLinkApp(),

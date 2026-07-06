@@ -1,3 +1,6 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
@@ -25,6 +28,9 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   late final TextEditingController _qtyCtrl;
   late final TextEditingController _unitCtrl;
 
+  List<String> _existingImages = [];
+  List<XFile> _newImages = [];
+
   bool _isLoading = false;
 
   bool get isEditing => widget.product != null;
@@ -37,6 +43,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     _priceCtrl = TextEditingController(text: widget.product?.pricePerUnit.toString() ?? '');
     _qtyCtrl = TextEditingController(text: widget.product?.availableQuantity.toString() ?? '');
     _unitCtrl = TextEditingController(text: widget.product?.unit ?? 'kg');
+    _existingImages = List.from(widget.product?.images ?? []);
   }
 
   @override
@@ -57,6 +64,15 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     try {
       final productService = context.read<ProductService>();
       
+      // Upload new images first
+      List<String> uploadedUrls = [];
+      for (var file in _newImages) {
+        final url = await productService.uploadImage(file);
+        uploadedUrls.add(url);
+      }
+      
+      final finalImages = [..._existingImages, ...uploadedUrls];
+      
       final productData = ProductModel(
         id: widget.product?.id ?? '', // id is ignored by backend on create
         name: _nameCtrl.text.trim(),
@@ -70,7 +86,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         viewCount: widget.product?.viewCount ?? 0,
         sellerId: widget.product?.sellerId ?? '',
         sellerType: widget.product?.sellerType ?? '',
-        images: widget.product?.images ?? [],
+        images: finalImages,
         certifications: widget.product?.certifications ?? [],
         category: widget.product?.category ?? 'Rau củ', // Should ideally use a category picker
       );
@@ -113,22 +129,35 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ponytail: YAGNI - complex image upload removed until storage service is ready
-              // Image upload placeholder
-              Container(
-                width: double.infinity,
-                height: 160,
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceSoft,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.muted.withValues(alpha: 0.3)),
-                ),
-                child: const Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+              // Image picker section
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
                   children: [
-                    Icon(Icons.add_photo_alternate_outlined, size: 48, color: AppColors.muted),
-                    SizedBox(height: 8),
-                    Text('Thêm ảnh sản phẩm (Sắp ra mắt)', style: TextStyle(color: AppColors.muted)),
+                    GestureDetector(
+                      onTap: () async {
+                        final picker = ImagePicker();
+                        final picked = await picker.pickImage(source: ImageSource.gallery);
+                        if (picked != null) {
+                          setState(() {
+                            _newImages.add(picked);
+                          });
+                        }
+                      },
+                      child: Container(
+                        width: 100,
+                        height: 100,
+                        margin: const EdgeInsets.only(right: 12),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceSoft,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.muted.withValues(alpha: 0.3)),
+                        ),
+                        child: const Icon(Icons.add_photo_alternate_outlined, color: AppColors.muted),
+                      ),
+                    ),
+                    ..._existingImages.map((url) => _buildImageThumbnail(url, isNetwork: true)),
+                    ..._newImages.map((file) => _buildImageThumbnail(file, isNetwork: false)),
                   ],
                 ),
               ),
@@ -193,6 +222,51 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
           ),
         ),
       ),
+    );
+  }
+  Widget _buildImageThumbnail(dynamic imageSource, {required bool isNetwork}) {
+    return Stack(
+      children: [
+        Container(
+          width: 100,
+          height: 100,
+          margin: const EdgeInsets.only(right: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            image: DecorationImage(
+              image: isNetwork 
+                  ? NetworkImage(imageSource as String) 
+                  : (kIsWeb 
+                      ? NetworkImage((imageSource as XFile).path) 
+                      : FileImage(File((imageSource as XFile).path))) as ImageProvider,
+              fit: BoxFit.cover,
+            ),
+          ),
+        ),
+        Positioned(
+          top: 4,
+          right: 16,
+          child: GestureDetector(
+            onTap: () {
+              setState(() {
+                if (isNetwork) {
+                  _existingImages.remove(imageSource);
+                } else {
+                  _newImages.remove(imageSource);
+                }
+              });
+            },
+            child: Container(
+              padding: const EdgeInsets.all(2),
+              decoration: const BoxDecoration(
+                color: Colors.black54,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.close, size: 16, color: Colors.white),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

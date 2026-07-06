@@ -17,6 +17,8 @@ class ProductModel {
   final List<String> certifications;
   final String category;
 
+  String? get primaryImageUrl => images.isNotEmpty ? images.first : null;
+
   const ProductModel({
     required this.id,
     required this.name,
@@ -39,7 +41,7 @@ class ProductModel {
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
     return ProductModel(
-      id: json['id'] as String? ?? '',
+      id: json['id'] as String? ?? json['_id'] as String? ?? '',
       name: json['name'] as String? ?? '',
       description: json['description'] as String? ?? '',
       pricePerUnit: (json['pricePerUnit'] as num?)?.toDouble() ?? 0.0,
@@ -85,8 +87,8 @@ class ProductModel {
       'expiryDate': expiryDate?.toIso8601String(),
       'sellerId': sellerId,
       'sellerType': sellerType,
-      'images': images,
-      'certifications': certifications,
+      'images': images.map((url) => {'url': url, 'isPrimary': false}).toList(),
+      'certifications': certifications.map((c) => {'name': c}).toList(),
       'category': category,
     };
   }

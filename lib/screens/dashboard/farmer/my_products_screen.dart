@@ -118,10 +118,15 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
             : RefreshIndicator(
                 onRefresh: _fetchMyProducts,
                 color: AppColors.primary,
-                child: ListView.separated(
+                child: GridView.builder(
                   padding: const EdgeInsets.all(16),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 0.65,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                  ),
                   itemCount: _products.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 16),
                   itemBuilder: (context, index) {
                     final product = _products[index];
                     return Stack(
@@ -135,15 +140,23 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
                           right: 8,
                           child: Row(
                             children: [
-                              IconButton(
-                                icon: const Icon(Icons.edit, color: AppColors.primary),
-                                style: IconButton.styleFrom(backgroundColor: AppColors.canvas),
+                               IconButton(
+                                icon: const Icon(Icons.edit, color: AppColors.primary, size: 20),
+                                style: IconButton.styleFrom(
+                                  backgroundColor: Colors.white.withValues(alpha: 0.8),
+                                  padding: const EdgeInsets.all(6),
+                                  minimumSize: Size.zero,
+                                ),
                                 onPressed: () => _navigateToForm(product),
                               ),
                               const SizedBox(width: 4),
                               IconButton(
-                                icon: const Icon(Icons.delete_outline, color: AppColors.error),
-                                style: IconButton.styleFrom(backgroundColor: AppColors.canvas),
+                                icon: const Icon(Icons.delete_outline, color: AppColors.error, size: 20),
+                                style: IconButton.styleFrom(
+                                  backgroundColor: Colors.white.withValues(alpha: 0.8),
+                                  padding: const EdgeInsets.all(6),
+                                  minimumSize: Size.zero,
+                                ),
                                 onPressed: () => _deleteProduct(product),
                               ),
                             ],

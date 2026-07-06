@@ -24,6 +24,19 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
+  late final PageController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(initialPage: _currentIndex);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -115,7 +128,11 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return Scaffold(
-      body: IndexedStack(index: _currentIndex, children: screens),
+      body: PageView(
+        controller: _pageController,
+        physics: const NeverScrollableScrollPhysics(), // Disable swipe if we only want tap navigation
+        children: screens,
+      ),
       bottomNavigationBar: _buildCustomBottomNav(navItems),
     );
   }
@@ -137,7 +154,14 @@ class _HomeScreenState extends State<HomeScreen> {
               final isActive = _currentIndex == index;
 
               return _buildNavItem(item, isActive, () {
-                setState(() => _currentIndex = index);
+                if (_currentIndex != index) {
+                  setState(() => _currentIndex = index);
+                  _pageController.animateToPage(
+                    index,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOutCubic,
+                  );
+                }
               });
             }).toList(),
           ),

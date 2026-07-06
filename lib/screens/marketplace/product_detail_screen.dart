@@ -135,22 +135,21 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               .copyWith(fontSize: 16)),
                       const SizedBox(height: 14),
                       _buildSellerCard(),
+                      const SizedBox(height: 32),
+                      const Divider(),
+                      const SizedBox(height: 16),
+                      
+                      // Reviews Section (TV2 task)
+                      const ReviewsSection(productId: 'mock_id'),
+                      
+                      const SizedBox(height: 100), // padding for bottom bar
                     ],
                   ),
-                  const SizedBox(height: 32),
-                  const Divider(),
-                  const SizedBox(height: 16),
-                  
-                  // Reviews Section (TV2 task)
-                  const ReviewsSection(productId: 'mock_id'),
-                  
-                  const SizedBox(height: 100), // padding for bottom bar
-                ],
+                ),
               ),
-            ),
-          ],
-        ),
-        Positioned(
+            ],
+          ),
+          Positioned(
           bottom: 0,
           left: 0,
           right: 0,

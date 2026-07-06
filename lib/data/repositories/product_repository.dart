@@ -1,4 +1,6 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart';
 import '../models/product_model.dart';
 import '../services/api_service.dart';
 import '../../core/constants/api_constants.dart';
@@ -124,12 +126,22 @@ class ProductRepository {
     try {
       final response = await _apiService.get(
         ApiConstants.products,
-        queryParameters: {'mine': true},
+        queryParameters: {'sellerId': 'me'},
       );
       final data = response.data;
-      if (data is Map<String, dynamic> && data['data'] is List) {
-        final list = data['data'] as List;
-        return list.map((json) => ProductModel.fromJson(json as Map<String, dynamic>)).toList();
+      if (data is Map<String, dynamic>) {
+        final inner = data['data'];
+        List? list;
+        if (inner is List) {
+          list = inner;
+        } else if (inner is Map<String, dynamic> && inner['items'] is List) {
+          list = inner['items'] as List;
+        }
+        if (list != null) {
+          return list
+              .map((json) => ProductModel.fromJson(json as Map<String, dynamic>))
+              .toList();
+        }
       }
       return [];
     } on DioException catch (e) {
@@ -151,6 +163,36 @@ class ProductRepository {
       return ['Rau củ', 'Trái cây', 'Gia vị', 'Thảo dược', 'Hạt dinh dưỡng'];
     } catch (_) {
       return ['Rau củ', 'Trái cây', 'Gia vị', 'Thảo dược', 'Hạt dinh dưỡng'];
+    }
+  }
+
+  /// Uploads an image and returns its URL.
+  Future<String> uploadImage(XFile file) async {
+    try {
+      MultipartFile multipartFile;
+      if (kIsWeb) {
+        final bytes = await file.readAsBytes();
+        multipartFile = MultipartFile.fromBytes(bytes, filename: file.name);
+      } else {
+        multipartFile = await MultipartFile.fromFile(file.path, filename: file.name);
+      }
+
+      final formData = FormData.fromMap({
+        'file': multipartFile,
+      });
+      final response = await _apiService.post(
+        '/storage/images/upload',
+        data: formData,
+      );
+      final data = response.data;
+      if (data is Map<String, dynamic> && data['data'] != null) {
+        return data['data']['url'] as String;
+      }
+      throw Exception('Upload ảnh thất bại');
+    } on DioException catch (e) {
+      throw Exception(e.error ?? 'Upload ảnh thất bại');
+    } catch (e) {
+      throw Exception('Lỗi: $e');
     }
   }
 }

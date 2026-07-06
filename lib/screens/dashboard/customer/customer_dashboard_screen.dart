@@ -256,8 +256,10 @@ class _CustomerDashboardScreenState extends State<CustomerDashboardScreen> {
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 20),
-                              // Search bar
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                            // Search bar
                               GestureDetector(
                                 onTap: () =>
                                     Navigator.pushNamed(context, AppRouter.marketplace),

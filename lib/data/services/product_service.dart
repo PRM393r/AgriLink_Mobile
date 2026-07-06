@@ -55,4 +55,8 @@ class ProductService {
   Future<List<String>> fetchCategories() {
     return _productRepository.getCategories();
   }
+
+  Future<String> uploadImage(dynamic file) {
+    return _productRepository.uploadImage(file);
+  }
 }

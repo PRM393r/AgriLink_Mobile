@@ -13,6 +13,7 @@ import '../cart/cart_screen.dart';
 import '../orders/order_history_screen.dart';
 import '../orders/seller_order_screen.dart';
 import '../profile/profile_screen.dart';
+import '../dashboard/farmer/my_products_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -79,7 +80,7 @@ class _HomeScreenState extends State<HomeScreen> {
         role == 'farmer'
             ? const FarmerDashboardScreen()
             : const SupplierDashboardScreen(),
-        const MarketplaceScreen(),
+        const MyProductsScreen(),
         const SellerOrderScreen(),
         const ProfileScreen(),
       ]);

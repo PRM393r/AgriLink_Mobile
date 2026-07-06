@@ -188,8 +188,27 @@ class _CustomerDashboardScreenState extends State<CustomerDashboardScreen> {
                                       ],
                                     ),
                                   ),
-                                  // Cart icon
-                                  GestureDetector(
+                                  // Action buttons
+                                  Row(
+                                    children: [
+                                      GestureDetector(
+                                        onTap: () =>
+                                            Navigator.pushNamed(context, AppRouter.wishlist),
+                                        child: Container(
+                                          padding: const EdgeInsets.all(10),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.canvas.withValues(alpha: 0.15),
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          child: const Icon(
+                                            Icons.favorite_border,
+                                            color: AppColors.error,
+                                            size: 22,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      GestureDetector(
                                     onTap: () =>
                                         Navigator.pushNamed(context, AppRouter.cart),
                                     child: Stack(

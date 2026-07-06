@@ -115,6 +115,15 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
               style: AppTextStyles.sectionTitle,
             ),
             centerTitle: true,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.favorite_border, color: AppColors.error),
+                onPressed: () {
+                  Navigator.pushNamed(context, AppRouter.wishlist);
+                },
+              ),
+              const SizedBox(width: 8),
+            ],
           ),
 
           // ── Search bar ──

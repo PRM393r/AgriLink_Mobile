@@ -7,6 +7,7 @@ import '../../../data/services/product_service.dart';
 import '../../../widgets/common/loading_overlay.dart';
 import '../../../widgets/common/empty_state.dart';
 import '../../../widgets/product/product_card.dart';
+import '../../../router/app_router.dart';
 import 'product_form_screen.dart';
 
 class MyProductsScreen extends StatefulWidget {
@@ -133,7 +134,13 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
                       children: [
                         ProductCard(
                           product: product,
-                          onTap: () => _navigateToForm(product),
+                          onTap: () {
+                            Navigator.pushNamed(
+                              context,
+                              AppRouter.productDetail,
+                              arguments: product,
+                            ).then((_) => _fetchMyProducts());
+                          },
                         ),
                         Positioned(
                           top: 8,

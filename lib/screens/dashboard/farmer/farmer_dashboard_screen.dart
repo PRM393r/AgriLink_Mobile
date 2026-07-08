@@ -13,6 +13,7 @@ import '../../../data/models/order_model.dart';
 import '../../../data/services/product_service.dart';
 import '../../../data/services/order_service.dart';
 import '../../../core/utils/currency_formatter.dart';
+import '../../../router/app_router.dart';
 import 'product_form_screen.dart';
 import 'statistics_screen.dart';
 
@@ -407,7 +408,9 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
                   Text('Sản phẩm của tôi',
                       style: AppTextStyles.sectionTitle.copyWith(fontSize: 18)),
                   TextButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.pushNamed(context, AppRouter.myProducts).then((_) => _fetchData());
+                    },
                     child: Text('Xem tất cả',
                         style: AppTextStyles.subtitle.copyWith(
                             color: AppColors.primary,
@@ -445,7 +448,11 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
                             final isLast = e.key == _myProducts.length - 1;
                             return AnimatedListItem(
                               index: e.key,
-                              child: Column(
+                              child: InkWell(
+                                onTap: () {
+                                  Navigator.pushNamed(context, AppRouter.myProducts).then((_) => _fetchData());
+                                },
+                                child: Column(
                                 children: [
                                   Padding(
                                     padding: const EdgeInsets.all(14),
@@ -490,6 +497,7 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
                                     Divider(height: 1, indent: 70, color: AppColors.surfaceDivider.withValues(alpha: 0.3)),
                                 ],
                               ),
+                            ),
                             );
                           }).toList(),
                         ),

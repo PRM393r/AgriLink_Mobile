@@ -159,10 +159,23 @@ class ProductRepository {
       if (data is Map<String, dynamic> && data['data'] is List) {
         return (data['data'] as List).map((e) => e.toString()).toList();
       }
-      // Return fallback categories if backend empty
       return ['Rau củ', 'Trái cây', 'Gia vị', 'Thảo dược', 'Hạt dinh dưỡng'];
     } catch (_) {
       return ['Rau củ', 'Trái cây', 'Gia vị', 'Thảo dược', 'Hạt dinh dưỡng'];
+    }
+  }
+
+  /// Fetches category tree for picker.
+  Future<List<Map<String, dynamic>>> getCategoryTree() async {
+    try {
+      final response = await _apiService.get('${ApiConstants.productCategories}/tree');
+      final data = response.data;
+      if (data is Map<String, dynamic> && data['data'] is List) {
+        return List<Map<String, dynamic>>.from(data['data']);
+      }
+      return [];
+    } catch (_) {
+      return [];
     }
   }
 

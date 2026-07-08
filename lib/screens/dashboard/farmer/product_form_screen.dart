@@ -8,6 +8,8 @@ import '../../../data/models/product_model.dart';
 import '../../../data/services/product_service.dart';
 import '../../../widgets/common/agri_button.dart';
 import '../../../widgets/common/agri_text_field.dart';
+import '../../../widgets/product/category_picker.dart';
+import '../../../core/constants/app_text_styles.dart';
 
 // ponytail: Unified Create and Edit screen. 
 // Uses the same form, fills initial values if editing.
@@ -31,6 +33,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   List<String> _existingImages = [];
   List<XFile> _newImages = [];
 
+  String? _selectedCategory;
   bool _isLoading = false;
 
   bool get isEditing => widget.product != null;
@@ -44,6 +47,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     _qtyCtrl = TextEditingController(text: widget.product?.availableQuantity.toString() ?? '');
     _unitCtrl = TextEditingController(text: widget.product?.unit ?? 'kg');
     _existingImages = List.from(widget.product?.images ?? []);
+    _selectedCategory = widget.product?.category;
   }
 
   @override
@@ -58,6 +62,12 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_selectedCategory == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng chọn danh mục')),
+      );
+      return;
+    }
     
     setState(() => _isLoading = true);
     
@@ -88,7 +98,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         sellerType: widget.product?.sellerType ?? '',
         images: finalImages,
         certifications: widget.product?.certifications ?? [],
-        category: widget.product?.category ?? 'Rau củ', // Should ideally use a category picker
+        category: _selectedCategory ?? 'Rau củ',
       );
 
       if (isEditing) {
@@ -169,6 +179,43 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                 hintText: 'VD: Cà chua Cherry',
                 validator: (v) => v!.trim().isEmpty ? 'Bắt buộc nhập' : null,
               ),
+              const SizedBox(height: 16),
+              
+              InkWell(
+                onTap: () async {
+                  final cat = await CategoryPickerBottomSheet.show(context, initialCategory: _selectedCategory);
+                  if (cat != null) {
+                    setState(() {
+                      _selectedCategory = cat;
+                    });
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceSoft,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.surfaceDivider),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        _selectedCategory ?? 'Chọn danh mục',
+                        style: _selectedCategory != null
+                            ? AppTextStyles.body
+                            : AppTextStyles.body.copyWith(color: AppColors.muted),
+                      ),
+                      const Icon(Icons.chevron_right, color: AppColors.muted),
+                    ],
+                  ),
+                ),
+              ),
+              if (_selectedCategory == null)
+                Padding(
+                  padding: const EdgeInsets.only(left: 16, top: 6),
+                  child: Text('Vui lòng chọn danh mục', style: AppTextStyles.body.copyWith(color: Colors.red, fontSize: 12)),
+                ),
               const SizedBox(height: 16),
               
               Row(

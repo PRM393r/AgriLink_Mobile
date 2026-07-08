@@ -8,55 +8,41 @@ class TokenStorage {
   static const String _refreshKey = 'agrilink_refresh_token';
   static const FlutterSecureStorage _storage = FlutterSecureStorage();
 
-  // Web memory fallback
-  static String? _webAccess;
-  static String? _webRefresh;
+  // Memory fallback for all platforms
+  static String? _memoryAccess;
+  static String? _memoryRefresh;
 
   // ── Access token ─────────────────────────────────────────────────────────
 
   static Future<void> saveToken(String token) async {
-    if (kIsWeb) {
-      _webAccess = token;
-      try { await _storage.write(key: _accessKey, value: token); } catch (_) {}
-    } else {
-      await _storage.write(key: _accessKey, value: token);
-    }
+    _memoryAccess = token;
+    try { await _storage.write(key: _accessKey, value: token); } catch (_) {}
   }
 
   static Future<String?> getToken() async {
-    if (kIsWeb) {
-      if (_webAccess != null) return _webAccess;
-      try { return await _storage.read(key: _accessKey); } catch (_) { return null; }
-    }
-    return await _storage.read(key: _accessKey);
+    if (_memoryAccess != null) return _memoryAccess;
+    try { return await _storage.read(key: _accessKey); } catch (_) { return null; }
   }
 
   static Future<void> deleteToken() async {
-    _webAccess = null;
+    _memoryAccess = null;
     try { await _storage.delete(key: _accessKey); } catch (_) {}
   }
 
   // ── Refresh token ─────────────────────────────────────────────────────────
 
   static Future<void> saveRefreshToken(String token) async {
-    if (kIsWeb) {
-      _webRefresh = token;
-      try { await _storage.write(key: _refreshKey, value: token); } catch (_) {}
-    } else {
-      await _storage.write(key: _refreshKey, value: token);
-    }
+    _memoryRefresh = token;
+    try { await _storage.write(key: _refreshKey, value: token); } catch (_) {}
   }
 
   static Future<String?> getRefreshToken() async {
-    if (kIsWeb) {
-      if (_webRefresh != null) return _webRefresh;
-      try { return await _storage.read(key: _refreshKey); } catch (_) { return null; }
-    }
-    return await _storage.read(key: _refreshKey);
+    if (_memoryRefresh != null) return _memoryRefresh;
+    try { return await _storage.read(key: _refreshKey); } catch (_) { return null; }
   }
 
   static Future<void> deleteRefreshToken() async {
-    _webRefresh = null;
+    _memoryRefresh = null;
     try { await _storage.delete(key: _refreshKey); } catch (_) {}
   }
 

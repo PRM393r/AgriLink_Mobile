@@ -11,6 +11,7 @@ class AgriTextField extends StatelessWidget {
   final Widget? prefixIcon;
   final Widget? suffixIcon;
   final int? maxLength;
+  final int? maxLines;
   final String? Function(String?)? validator;
   final ValueChanged<String>? onChanged;
 
@@ -25,6 +26,7 @@ class AgriTextField extends StatelessWidget {
     this.prefixIcon,
     this.suffixIcon,
     this.maxLength,
+    this.maxLines = 1,
     this.validator,
     this.onChanged,
   });
@@ -36,6 +38,7 @@ class AgriTextField extends StatelessWidget {
       keyboardType: keyboardType,
       obscureText: obscureText,
       maxLength: maxLength,
+      maxLines: maxLines,
       validator: validator,
       onChanged: onChanged,
       style: AppTextStyles.body,

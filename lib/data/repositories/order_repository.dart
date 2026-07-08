@@ -112,4 +112,32 @@ class OrderRepository {
       throw Exception(e.error ?? 'Lấy đơn hàng thất bại');
     }
   }
+  Future<Map<String, dynamic>> getSellerStats() async {
+    try {
+      final response = await _apiService.get('${ApiConstants.orders}/seller-stats');
+      final data = response.data;
+      if (data is Map<String, dynamic> && data['data'] != null) {
+        return data['data'] as Map<String, dynamic>;
+      }
+      return {'totalRevenue': 0, 'totalOrders': 0, 'pendingOrders': 0, 'totalProducts': 0};
+    } catch (_) {
+      return {'totalRevenue': 0, 'totalOrders': 0, 'pendingOrders': 0, 'totalProducts': 0};
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getMonthlyRevenue({String type = 'monthly'}) async {
+    try {
+      final response = await _apiService.get(
+        '${ApiConstants.orders}/seller-stats/monthly',
+        queryParameters: {'type': type},
+      );
+      final data = response.data;
+      if (data is Map<String, dynamic> && data['data'] is List) {
+        return List<Map<String, dynamic>>.from(data['data']);
+      }
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
 }

@@ -45,6 +45,9 @@ dependencies:
   provider: ^6.1.2
   google_fonts: ^6.2.1
   socket_io_client: ^2.0.3
+  image_picker: ^1.2.3
+  intl: ^0.20.3
+  fl_chart: ^1.2.0
 
 dev_dependencies:
   flutter_test:

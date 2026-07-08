@@ -5,6 +5,8 @@ import '../../data/models/product_model.dart';
 import '../../widgets/product/product_card.dart';
 import '../../widgets/common/animated_list_item.dart';
 import '../../router/app_router.dart';
+import 'package:provider/provider.dart';
+import '../../data/services/product_service.dart';
 
 class MarketplaceScreen extends StatefulWidget {
   const MarketplaceScreen({super.key});
@@ -25,78 +27,59 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     '🐟 Thủy sản',
   ];
 
-  // Generate mock products for demonstration
-  final List<ProductModel> mockProducts = [
-    ProductModel(
-      id: '1',
-      name: 'Dâu tây thủy canh Đà Lạt',
-      description:
-          'Dâu tây trồng nhà màng công nghệ cao ngọt thanh thơm mọng.',
-      pricePerUnit: 180000,
-      unit: 'kg',
-      availableQuantity: 50,
-      minOrderQuantity: 1,
-      farmingType: 'Hydroponic',
-      status: 'active',
-      viewCount: 150,
-      sellerId: 'seller_123',
-      sellerType: 'farmer',
-      images: const [],
-      certifications: const ['VietGAP'],
-      category: 'Trái cây',
-    ),
-    ProductModel(
-      id: '2',
-      name: 'Măng tây xanh loại 1',
-      description: 'Măng tây xanh giòn ngọt thu hoạch trong ngày.',
-      pricePerUnit: 85000,
-      unit: 'kg',
-      availableQuantity: 120,
-      minOrderQuantity: 2,
-      farmingType: 'Organic',
-      status: 'active',
-      viewCount: 89,
-      sellerId: 'seller_456',
-      sellerType: 'farmer',
-      images: const [],
-      certifications: const ['Organic'],
-      category: 'Rau củ',
-    ),
-    ProductModel(
-      id: '3',
-      name: 'Bưởi da xanh Bến Tre',
-      description: 'Bưởi da xanh tép vàng mọng nước, ngọt thanh.',
-      pricePerUnit: 55000,
-      unit: 'quả',
-      availableQuantity: 200,
-      minOrderQuantity: 1,
-      farmingType: 'VietGAP',
-      status: 'active',
-      viewCount: 65,
-      sellerId: 'seller_789',
-      sellerType: 'farmer',
-      images: const [],
-      certifications: const ['VietGAP'],
-      category: 'Trái cây',
-    ),
-    ProductModel(
-      id: '4',
-      name: 'Cải bó xôi baby',
-      description: 'Cải bó xôi baby non mướt giàu dinh dưỡng.',
-      pricePerUnit: 45000,
-      unit: 'kg',
-      availableQuantity: 80,
-      minOrderQuantity: 1,
-      farmingType: 'Organic',
-      status: 'active',
-      viewCount: 34,
-      sellerId: 'seller_101',
-      sellerType: 'farmer',
-      images: const [],
-      certifications: const ['Organic'],
-      category: 'Rau củ',
-    ),
-  ];
+  bool _isLoading = true;
+  List<ProductModel> _products = [];
+  String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchProducts();
+  }
+
+  Future<void> _fetchProducts() async {
+    setState(() => _isLoading = true);
+    try {
+      final productService = context.read<ProductService>();
+      String? category;
+      if (_selectedCategoryIndex > 0) {
+        // Remove emoji from category name for API querying
+        final rawCat = _filterChips[_selectedCategoryIndex];
+        category = rawCat.substring(rawCat.indexOf(' ') + 1).trim();
+      }
+      
+      final products = await productService.fetchMarketplaceProducts(
+        category: category,
+        search: _searchQuery.isNotEmpty ? _searchQuery : null,
+      );
+      
+      if (mounted) {
+        setState(() {
+          _products = products;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi tải sản phẩm: $e')),
+        );
+      }
+    }
+  }
+
+  void _onCategorySelected(int index) {
+    if (_selectedCategoryIndex == index) return;
+    setState(() => _selectedCategoryIndex = index);
+    _fetchProducts();
+  }
+
+  void _onSearchChanged(String query) {
+    _searchQuery = query;
+    // We could add debouncer here
+    _fetchProducts();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -115,6 +98,15 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
               style: AppTextStyles.sectionTitle,
             ),
             centerTitle: true,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.favorite_border, color: AppColors.error),
+                onPressed: () {
+                  Navigator.pushNamed(context, AppRouter.wishlist);
+                },
+              ),
+              const SizedBox(width: 8),
+            ],
           ),
 
           // ── Search bar ──
@@ -144,6 +136,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                       color: AppColors.muted.withValues(alpha: 0.6),
                     ),
                   ),
+                  onSubmitted: _onSearchChanged,
                 ),
               ),
             ),
@@ -162,9 +155,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                   return Padding(
                     padding: const EdgeInsets.only(right: 8),
                     child: GestureDetector(
-                      onTap: () {
-                        setState(() => _selectedCategoryIndex = index);
-                      },
+                      onTap: () => _onCategorySelected(index),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 250),
                         padding: const EdgeInsets.symmetric(
@@ -205,7 +196,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
               child: Text(
-                '${mockProducts.length} sản phẩm',
+                _isLoading ? 'Đang tải...' : '${_products.length} sản phẩm',
                 style: AppTextStyles.caption.copyWith(
                   color: AppColors.muted,
                 ),
@@ -228,18 +219,18 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                   return AnimatedListItem(
                     index: index,
                     child: ProductCard(
-                      product: mockProducts[index],
+                      product: _products[index],
                       onTap: () {
                         Navigator.pushNamed(
                           context,
                           AppRouter.productDetail,
-                          arguments: mockProducts[index],
+                          arguments: _products[index],
                         );
                       },
                     ),
                   );
                 },
-                childCount: mockProducts.length,
+                childCount: _products.length,
               ),
             ),
           ),

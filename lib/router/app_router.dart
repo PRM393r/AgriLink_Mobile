@@ -17,6 +17,11 @@ import '../screens/marketplace/marketplace_screen.dart';
 import '../screens/marketplace/product_detail_screen.dart';
 import '../screens/profile/edit_profile_screen.dart';
 
+import '../screens/dashboard/farmer/my_products_screen.dart';
+import '../screens/dashboard/farmer/product_form_screen.dart';
+import '../screens/wishlist/wishlist_screen.dart';
+import '../screens/reviews/review_form_screen.dart';
+
 class AppRouter {
   const AppRouter._();
 
@@ -35,48 +40,61 @@ class AppRouter {
   static const String customer = '/customer';
   static const String marketplace = '/marketplace';
   static const String productDetail = '/product-detail';
+  static const String myProducts = '/my-products';
+  static const String productForm = '/product-form';
+  static const String wishlist = '/wishlist';
   static const String editProfile = '/edit-profile';
+  static const String reviewForm = '/review-form';
 
   static Route<dynamic>? onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
       case splash:
-        return MaterialPageRoute(builder: (_) => const SplashScreen());
+        return MaterialPageRoute(builder: (_) => const SplashScreen(), settings: settings);
       case login:
-        return FadeScaleRoute(page: const LoginScreen());
+        return FadeScaleRoute(page: const LoginScreen(), settings: settings);
       case register:
-        return SlideRoute(page: const RegisterScreen());
+        return SlideRoute(page: const RegisterScreen(), settings: settings);
       case verifyEmail:
         return SlideRoute(
           page: const VerifyEmailScreen(),
+          settings: settings,
         );
       case rolePicker:
-        return FadeScaleRoute(page: const RolePickerScreen());
+        return FadeScaleRoute(page: const RolePickerScreen(), settings: settings);
       case home:
-        return FadeScaleRoute(page: const HomeScreen());
+        return FadeScaleRoute(page: const HomeScreen(), settings: settings);
       case cart:
-        return SlideUpRoute(page: const CartScreen());
+        return SlideUpRoute(page: const CartScreen(), settings: settings);
       case checkout:
-        return SlideRoute(page: const CheckoutScreen());
+        return SlideRoute(page: const CheckoutScreen(), settings: settings);
       case orderSuccess:
-        return FadeScaleRoute(page: const OrderSuccessScreen());
+        return FadeScaleRoute(page: const OrderSuccessScreen(), settings: settings);
       case orderHistory:
-        return SlideRoute(page: const OrderHistoryScreen());
+        return SlideRoute(page: const OrderHistoryScreen(), settings: settings);
       case orderDetail:
         return SlideUpRoute(
           page: const OrderDetailScreen(),
+          settings: settings,
         );
       case sellerOrders:
-        return SlideRoute(page: const SellerOrderScreen());
+        return SlideRoute(page: const SellerOrderScreen(), settings: settings);
       case customer:
         return FadeScaleRoute(
-            page: const CustomerDashboardScreen());
+            page: const CustomerDashboardScreen(), settings: settings);
       case marketplace:
-        return SlideRoute(page: const MarketplaceScreen());
+        return SlideRoute(page: const MarketplaceScreen(), settings: settings);
       case productDetail:
-        return SlideUpRoute(
-            page: const ProductDetailScreen());
+        return SlideUpRoute(page: const ProductDetailScreen(), settings: settings);
+      case myProducts:
+        return SlideRoute(page: const MyProductsScreen(), settings: settings);
+      case productForm:
+        return SlideRoute(page: const ProductFormScreen(), settings: settings);
+      case wishlist:
+        return SlideRoute(page: const WishlistScreen(), settings: settings);
       case editProfile:
-        return SlideRoute(page: const EditProfileScreen());
+        return SlideRoute(page: const EditProfileScreen(), settings: settings);
+      case reviewForm:
+        return SlideUpRoute(page: const ReviewFormScreen(), settings: settings);
       default:
         return MaterialPageRoute(
           builder: (_) => Scaffold(

@@ -8,6 +8,9 @@ import '../../data/models/product_model.dart';
 import '../../widgets/common/agri_button.dart';
 import '../../widgets/product/product_badge.dart';
 import '../../widgets/product/reviews_section.dart';
+import '../../data/services/review_service.dart';
+import '../../data/models/review_model.dart';
+import '../../router/app_router.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   const ProductDetailScreen({super.key});
@@ -18,18 +21,50 @@ class ProductDetailScreen extends StatefulWidget {
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
   int _quantity = 1;
+  bool _isLoadingReviews = true;
+  List<ReviewModel> _reviews = [];
+  ProductModel? _product;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_product == null) {
+      _product = ModalRoute.of(context)?.settings.arguments as ProductModel?;
+      if (_product != null) {
+        _fetchReviews();
+      }
+    }
+  }
+
+  Future<void> _fetchReviews() async {
+    if (_product == null) return;
+    setState(() => _isLoadingReviews = true);
+    try {
+      final service = context.read<ReviewService>();
+      final reviews = await service.getProductReviews(_product!.id);
+      if (mounted) {
+        setState(() {
+          _reviews = reviews;
+          _isLoadingReviews = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _isLoadingReviews = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final product =
-        ModalRoute.of(context)?.settings.arguments as ProductModel?;
-    final name = product?.name ?? 'Dâu tây thủy canh Đà Lạt';
-    final desc = product?.description ?? 'Dâu tây thủy canh công nghệ cao.';
-    final price = product?.pricePerUnit ?? 180000;
+    final product = _product;
+    final name = product?.name ?? 'Sản phẩm';
+    final desc = product?.description ?? '';
+    final price = product?.pricePerUnit ?? 0;
     final unit = product?.unit ?? 'kg';
-    final category = product?.category ?? 'Trái cây';
-    final certs = product?.certifications ?? const ['VietGAP'];
-    final farmType = product?.farmingType ?? 'Hydroponic';
+    final category = product?.category ?? '';
+    final certs = product?.certifications ?? const [];
+    final farmType = product?.farmingType ?? '';
 
     return Scaffold(
       backgroundColor: AppColors.surfaceElevated,
@@ -53,21 +88,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   ),
                 ),
                 flexibleSpace: FlexibleSpaceBar(
-                  background: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          AppColors.primaryUltraLight,
-                          AppColors.primaryLight.withValues(alpha: 0.2),
-                        ],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ),
-                    ),
-                    child: const Center(
-                      child: Text('🌿', style: TextStyle(fontSize: 64)),
-                    ),
-                  ),
+                  background: product?.primaryImageUrl != null && product!.primaryImageUrl!.isNotEmpty
+                      ? Image.network(
+                          product.primaryImageUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              _buildPlaceholder(),
+                        )
+                      : _buildPlaceholder(),
                 ),
               ),
               SliverToBoxAdapter(
@@ -135,12 +163,26 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               .copyWith(fontSize: 16)),
                       const SizedBox(height: 14),
                       _buildSellerCard(),
-                      const SizedBox(height: 32),
-                      const Divider(),
-                      const SizedBox(height: 16),
-                      
-                      // Reviews Section (TV2 task)
-                      const ReviewsSection(productId: 'mock_id'),
+                      const SizedBox(height: 24),
+                      ReviewsSection(
+                        reviews: _reviews,
+                        isLoading: _isLoadingReviews,
+                        onAddReview: () async {
+                          if (product == null) return;
+                          final result = await Navigator.pushNamed(
+                            context,
+                            AppRouter.reviewForm,
+                            arguments: {
+                              'productId': product.id,
+                              'orderId': '668541c8d0751836a992fa12',
+                              'productName': product.name,
+                            },
+                          );
+                          if (result == true) {
+                            _fetchReviews();
+                          }
+                        },
+                      ),
                       
                       const SizedBox(height: 100), // padding for bottom bar
                     ],
@@ -319,5 +361,24 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     }
     return b.toString();
   }
+
+  Widget _buildPlaceholder() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.primaryUltraLight,
+            AppColors.primaryLight.withValues(alpha: 0.2),
+          ],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+      ),
+      child: const Center(
+        child: Text('🌿', style: TextStyle(fontSize: 64)),
+      ),
+    );
+  }
 }
+
 

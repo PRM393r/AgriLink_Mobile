@@ -14,6 +14,7 @@ import 'data/services/wishlist_service.dart';
 import 'data/providers/wishlist_provider.dart';
 import 'data/repositories/order_repository.dart';
 import 'data/services/order_service.dart';
+import 'data/services/review_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -42,6 +43,9 @@ void main() async {
         ),
         ProxyProvider<OrderRepository, OrderService>(
           update: (_, repo, __) => OrderService(repo),
+        ),
+        ProxyProvider<ApiService, ReviewService>(
+          update: (_, api, __) => ReviewService(api),
         ),
       ],
       child: const AgriLinkApp(),

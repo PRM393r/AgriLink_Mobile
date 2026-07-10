@@ -207,19 +207,24 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Cung cấp vật tư nông nghiệp,',
-                        style: AppTextStyles.caption.copyWith(color: AppColors.muted),
-                      ),
-                      Text(
-                        user?.fullName ?? user?.phone ?? 'Nhà cung cấp',
-                        style: AppTextStyles.sectionTitle.copyWith(fontSize: 22),
-                      ),
-                    ],
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Cung cấp vật tư nông nghiệp,',
+                          style: AppTextStyles.caption.copyWith(color: AppColors.muted),
+                        ),
+                        Text(
+                          user?.fullName ?? user?.phone ?? 'Nhà cung cấp',
+                          style: AppTextStyles.sectionTitle.copyWith(fontSize: 22),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
                   ),
+                  const SizedBox(width: 12),
                   const CircleAvatar(
                     backgroundColor: AppColors.primaryUltraLight,
                     radius: 24,

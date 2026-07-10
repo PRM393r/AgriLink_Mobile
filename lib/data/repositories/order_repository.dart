@@ -67,11 +67,13 @@ class OrderRepository {
     }
   }
 
-  Future<OrderModel> updateOrderStatus(String id, String status) async {
+  Future<OrderModel> updateOrderStatus(String id, String status, {String? cancelReason}) async {
     try {
+      final body = <String, dynamic>{'status': status};
+      if (cancelReason != null && cancelReason.isNotEmpty) body['cancelReason'] = cancelReason;
       final response = await _apiService.patch(
         '${ApiConstants.orders}/$id/status',
-        data: {'status': status},
+        data: body,
       );
       final data = response.data;
       if (data is Map<String, dynamic> && data['data'] != null) {

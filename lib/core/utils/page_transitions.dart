@@ -5,8 +5,9 @@ import '../../core/constants/app_animations.dart';
 class SlideUpRoute<T> extends PageRouteBuilder<T> {
   final Widget page;
 
-  SlideUpRoute({required this.page})
+  SlideUpRoute({required this.page, RouteSettings? settings})
       : super(
+          settings: settings,
           transitionDuration: AppAnimations.pageTransition,
           reverseTransitionDuration: AppAnimations.pageTransition,
           pageBuilder: (context, animation, secondaryAnimation) => page,
@@ -34,8 +35,9 @@ class SlideUpRoute<T> extends PageRouteBuilder<T> {
 class FadeScaleRoute<T> extends PageRouteBuilder<T> {
   final Widget page;
 
-  FadeScaleRoute({required this.page})
+  FadeScaleRoute({required this.page, RouteSettings? settings})
       : super(
+          settings: settings,
           transitionDuration: AppAnimations.pageTransition,
           reverseTransitionDuration: AppAnimations.pageTransition,
           pageBuilder: (context, animation, secondaryAnimation) => page,
@@ -61,8 +63,9 @@ class FadeScaleRoute<T> extends PageRouteBuilder<T> {
 class SlideRoute<T> extends PageRouteBuilder<T> {
   final Widget page;
 
-  SlideRoute({required this.page})
+  SlideRoute({required this.page, RouteSettings? settings})
       : super(
+          settings: settings,
           transitionDuration: AppAnimations.pageTransition,
           reverseTransitionDuration: AppAnimations.pageTransition,
           pageBuilder: (context, animation, secondaryAnimation) => page,

@@ -7,6 +7,71 @@ import '../../router/app_router.dart';
 import '../../widgets/common/agri_button.dart';
 import '../../widgets/common/agri_text_field.dart';
 
+class _MockLoginDivider extends StatelessWidget {
+  const _MockLoginDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        const Expanded(child: Divider()),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          child: Text(
+            'Test nhanh',
+            style: TextStyle(fontSize: 12, color: AppColors.muted.withValues(alpha: 0.7)),
+          ),
+        ),
+        const Expanded(child: Divider()),
+      ],
+    );
+  }
+}
+
+class _MockLoginButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _MockLoginButton({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: color, size: 20),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -78,6 +143,12 @@ class _LoginScreenState extends State<LoginScreen>
         );
       },
     );
+  }
+
+  void _quickLogin(String email) {
+    _emailCtrl.text = email;
+    _passwordCtrl.text = 'demo123';
+    _login();
   }
 
   @override
@@ -252,7 +323,42 @@ class _LoginScreenState extends State<LoginScreen>
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 32),
+                            const SizedBox(height: 24),
+
+                            // Quick login for testing
+                            const _MockLoginDivider(),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _MockLoginButton(
+                                    label: 'Buyer',
+                                    icon: Icons.person_outline,
+                                    color: const Color(0xFF2563EB),
+                                    onTap: () => _quickLogin('buyer1@agrilink.vn'),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: _MockLoginButton(
+                                    label: 'Farmer',
+                                    icon: Icons.agriculture_outlined,
+                                    color: const Color(0xFF16A34A),
+                                    onTap: () => _quickLogin('farmer1@agrilink.vn'),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: _MockLoginButton(
+                                    label: 'Supplier',
+                                    icon: Icons.store_outlined,
+                                    color: const Color(0xFFD97706),
+                                    onTap: () => _quickLogin('supplier1@agrilink.vn'),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 24),
 
                             // Trust indicators
                             Center(

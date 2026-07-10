@@ -22,13 +22,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   Widget build(BuildContext context) {
     final product =
         ModalRoute.of(context)?.settings.arguments as ProductModel?;
-    final name = product?.name ?? 'Dâu tây thủy canh Đà Lạt';
-    final desc = product?.description ?? 'Dâu tây thủy canh công nghệ cao.';
-    final price = product?.pricePerUnit ?? 180000;
-    final unit = product?.unit ?? 'kg';
-    final category = product?.category ?? 'Trái cây';
-    final certs = product?.certifications ?? const ['VietGAP'];
-    final farmType = product?.farmingType ?? 'Hydroponic';
+    final name = product?.name ?? '';
+    final desc = product?.description ?? '';
+    final price = product?.pricePerUnit ?? 0;
+    final unit = product?.unit ?? '';
+    final category = product?.category ?? '';
+    final certs = product?.certifications ?? const [];
+    final farmType = product?.farmingType ?? '';
+    final province = product?.province ?? '';
+    final sellerName = product?.sellerName ?? '';
+    final hasImage = product?.images.isNotEmpty == true;
 
     return Scaffold(
       backgroundColor: AppColors.surfaceElevated,
@@ -63,9 +66,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         end: Alignment.bottomCenter,
                       ),
                     ),
-                    child: const Center(
-                      child: Text('🌿', style: TextStyle(fontSize: 64)),
-                    ),
+                    child: hasImage
+                        ? Image.network(
+                            product!.images.first,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => const Center(
+                              child: Text('🌿', style: TextStyle(fontSize: 64)),
+                            ),
+                          )
+                        : const Center(
+                            child: Text('🌿', style: TextStyle(fontSize: 64)),
+                          ),
                   ),
                 ),
               ),
@@ -133,7 +144,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           style: AppTextStyles.sectionTitle
                               .copyWith(fontSize: 16)),
                       const SizedBox(height: 14),
-                      _buildSellerCard(),
+                      _buildSellerCard(sellerName, province),
                     ],
                   ),
                 ),
@@ -239,7 +250,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  Widget _buildSellerCard() {
+  Widget _buildSellerCard(String sellerName, String province) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -266,11 +277,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('HTX Nông nghiệp sạch Đà Lạt',
+                Text(
+                    sellerName.isNotEmpty ? sellerName : 'Nhà vườn AgriLink',
                     style: AppTextStyles.subtitle.copyWith(
                         fontWeight: FontWeight.w600, color: AppColors.ink)),
                 const SizedBox(height: 4),
-                Text('Đức Trọng, Lâm Đồng',
+                Text(province.isNotEmpty ? province : '',
                     style: AppTextStyles.caption),
               ],
             ),

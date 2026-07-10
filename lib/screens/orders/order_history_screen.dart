@@ -63,7 +63,6 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
       if (mounted) setState(() {
         _error = e.toString();
         _isLoading = false;
-        _orders = _mockOrders; // fallback mock khi BE chưa sẵn
       });
     }
   }
@@ -114,6 +113,14 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
                           AppRouter.orderDetail,
                           arguments: _orders[i],
                         ),
+                        onTrack: () => Navigator.pushNamed(
+                          context,
+                          AppRouter.orderTracking,
+                          arguments: {
+                            'orderId': _orders[i].id,
+                            'orderCode': _orders[i].orderCode,
+                          },
+                        ),
                       ),
                     ),
             ),
@@ -141,8 +148,9 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
 class _OrderCard extends StatelessWidget {
   final OrderModel order;
   final VoidCallback onTap;
+  final VoidCallback? onTrack;
 
-  const _OrderCard({required this.order, required this.onTap});
+  const _OrderCard({required this.order, required this.onTap, this.onTrack});
 
   @override
   Widget build(BuildContext context) {
@@ -246,6 +254,25 @@ class _OrderCard extends StatelessWidget {
                   ),
                 ],
               ),
+              if (order.status == 'shipping' && onTrack != null) ...[
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: onTrack,
+                    icon: const Icon(Icons.location_on, size: 16),
+                    label: const Text('Theo dõi đơn hàng'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      side: const BorderSide(color: AppColors.primary),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -310,76 +337,3 @@ class _StatusBadge extends StatelessWidget {
   }
 }
 
-// ── Mock fallback (khi BE chưa sẵn) ─────────────────────────────────────────
-
-final _mockOrders = [
-  OrderModel(
-    id: 'm1',
-    orderCode: 'AGL-20260705-001',
-    buyerId: 'buyer1',
-    sellerId: 'seller1',
-    status: 'pending',
-    subtotal: 105000,
-    shippingFee: 0,
-    totalAmount: 105000,
-    paymentMethod: 'cod',
-    paymentStatus: 'unpaid',
-    items: [
-      OrderItemModel(
-        id: 'i1',
-        productSnapshot: {'name': 'Cà chua bi organic', 'unit': 'kg'},
-        quantity: 3,
-        unitPrice: 35000,
-        totalPrice: 105000,
-      ),
-    ],
-    createdAt: DateTime.now().subtract(const Duration(hours: 2)),
-    updatedAt: DateTime.now(),
-  ),
-  OrderModel(
-    id: 'm2',
-    orderCode: 'AGL-20260704-008',
-    buyerId: 'buyer1',
-    sellerId: 'seller2',
-    status: 'shipping',
-    subtotal: 140000,
-    shippingFee: 0,
-    totalAmount: 140000,
-    paymentMethod: 'bank_transfer',
-    paymentStatus: 'paid',
-    items: [
-      OrderItemModel(
-        id: 'i2',
-        productSnapshot: {'name': 'Gạo ST25', 'unit': 'kg'},
-        quantity: 5,
-        unitPrice: 28000,
-        totalPrice: 140000,
-      ),
-    ],
-    createdAt: DateTime.now().subtract(const Duration(days: 1)),
-    updatedAt: DateTime.now(),
-  ),
-  OrderModel(
-    id: 'm3',
-    orderCode: 'AGL-20260703-015',
-    buyerId: 'buyer1',
-    sellerId: 'seller3',
-    status: 'delivered',
-    subtotal: 65000,
-    shippingFee: 0,
-    totalAmount: 65000,
-    paymentMethod: 'cod',
-    paymentStatus: 'paid',
-    items: [
-      OrderItemModel(
-        id: 'i3',
-        productSnapshot: {'name': 'Xoài cát Hòa Lộc', 'unit': 'kg'},
-        quantity: 1,
-        unitPrice: 65000,
-        totalPrice: 65000,
-      ),
-    ],
-    createdAt: DateTime.now().subtract(const Duration(days: 2)),
-    updatedAt: DateTime.now(),
-  ),
-];

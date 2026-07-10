@@ -34,7 +34,8 @@ class ApiConstants {
   static const String notifications        = '/notifications';
   static const String notificationsReadAll = '/notifications/read-all';
 
-  // ── WebSocket (disabled) ──────────────────────────────────────────────────
+  // ── WebSocket ─────────────────────────────────────────────────────────────
   static String get wsUrl => 'http://$_host:5000/notifications';
+  static String get trackingSocketUrl => 'http://$_host:5000';
   static const bool enableNotificationSocket = false;
 }

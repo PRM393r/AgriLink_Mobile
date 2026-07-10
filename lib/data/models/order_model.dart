@@ -1,3 +1,16 @@
+class StatusHistoryEntry {
+  final String status;
+  final DateTime changedAt;
+  const StatusHistoryEntry({required this.status, required this.changedAt});
+  factory StatusHistoryEntry.fromJson(Map<String, dynamic> json) =>
+      StatusHistoryEntry(
+        status: json['status'] as String? ?? '',
+        changedAt: json['changedAt'] != null
+            ? DateTime.tryParse(json['changedAt'] as String) ?? DateTime.now()
+            : DateTime.now(),
+      );
+}
+
 class OrderModel {
   final String id;
   final String orderCode;
@@ -11,8 +24,10 @@ class OrderModel {
   final String paymentStatus;
   final String? note;
   final String? cancelledReason;
+  final String? cancelReason;
   final List<OrderItemModel> items;
   final Map<String, dynamic>? shippingAddressSnapshot;
+  final List<StatusHistoryEntry> statusHistory;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -29,8 +44,10 @@ class OrderModel {
     required this.paymentStatus,
     this.note,
     this.cancelledReason,
+    this.cancelReason,
     required this.items,
     this.shippingAddressSnapshot,
+    this.statusHistory = const [],
     required this.createdAt,
     required this.updatedAt,
   });
@@ -49,11 +66,16 @@ class OrderModel {
       paymentStatus: json['paymentStatus'] as String? ?? 'unpaid',
       note: json['note'] as String?,
       cancelledReason: json['cancelledReason'] as String?,
+      cancelReason: json['cancelReason'] as String?,
       items: (json['items'] as List<dynamic>?)
               ?.map((e) => OrderItemModel.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const [],
       shippingAddressSnapshot: json['shippingAddressSnapshot'] as Map<String, dynamic>?,
+      statusHistory: (json['statusHistory'] as List<dynamic>?)
+              ?.map((e) => StatusHistoryEntry.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'] as String) ?? DateTime.now()
           : DateTime.now(),

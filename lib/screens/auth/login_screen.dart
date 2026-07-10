@@ -335,7 +335,7 @@ class _LoginScreenState extends State<LoginScreen>
                                     label: 'Buyer',
                                     icon: Icons.person_outline,
                                     color: const Color(0xFF2563EB),
-                                    onTap: () => _quickLogin('buyer1@agrilink.vn'),
+                                    onTap: () => _quickLogin('customer1@agrilink.vn'),
                                   ),
                                 ),
                                 const SizedBox(width: 8),

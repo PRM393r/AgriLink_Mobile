@@ -316,7 +316,6 @@ class ProfileScreen extends StatelessWidget {
                   'Về AgriLink',
                   AppColors.muted,
                 ),
-                ),
               ]),
             ),
           ),

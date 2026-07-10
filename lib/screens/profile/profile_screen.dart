@@ -24,9 +24,13 @@ class ProfileScreen extends StatelessWidget {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text(AppStrings.logout,
-                style: TextStyle(
-                    color: AppColors.error, fontWeight: FontWeight.bold)),
+            child: Text(
+              AppStrings.logout,
+              style: TextStyle(
+                color: AppColors.error,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -35,7 +39,10 @@ class ProfileScreen extends StatelessWidget {
       await authProvider.logout();
       if (context.mounted) {
         Navigator.pushNamedAndRemoveUntil(
-            context, AppRouter.login, (route) => false);
+          context,
+          AppRouter.login,
+          (route) => false,
+        );
       }
     }
   }
@@ -68,12 +75,11 @@ class ProfileScreen extends StatelessWidget {
     final name = user?.fullName.trim().isNotEmpty == true
         ? user!.fullName.trim()
         : 'Chưa cập nhật tên';
-    final phone = (user?.phone?.trim().isNotEmpty == true)
-        ? user!.phone!
-        : '';
+    final phone = (user?.phone?.trim().isNotEmpty == true) ? user!.phone! : '';
     final email = user?.email.trim().isNotEmpty == true
         ? user!.email.trim()
         : 'Chưa cập nhật email';
+    final address = user?.address?.trim() ?? '';
     final role = user?.role ?? '';
 
     return Scaffold(
@@ -84,15 +90,24 @@ class ProfileScreen extends StatelessWidget {
           SliverToBoxAdapter(
             child: Container(
               padding: EdgeInsets.fromLTRB(
-                  24, MediaQuery.of(context).padding.top + 20, 24, 28),
+                24,
+                MediaQuery.of(context).padding.top + 20,
+                24,
+                28,
+              ),
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Color(0xFF1B4332), Color(0xFF2D6A4F), Color(0xFF40916C)],
+                  colors: [
+                    Color(0xFF1B4332),
+                    Color(0xFF2D6A4F),
+                    Color(0xFF40916C),
+                  ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius:
-                    BorderRadius.vertical(bottom: Radius.circular(28)),
+                borderRadius: BorderRadius.vertical(
+                  bottom: Radius.circular(28),
+                ),
               ),
               child: Column(
                 children: [
@@ -100,12 +115,17 @@ class ProfileScreen extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Tài khoản',
-                          style: AppTextStyles.sectionTitle
-                              .copyWith(color: AppColors.canvas)),
+                      Text(
+                        'Tài khoản',
+                        style: AppTextStyles.sectionTitle.copyWith(
+                          color: AppColors.canvas,
+                        ),
+                      ),
                       IconButton(
-                        icon: const Icon(Icons.settings_outlined,
-                            color: AppColors.canvas),
+                        icon: const Icon(
+                          Icons.settings_outlined,
+                          color: AppColors.canvas,
+                        ),
                         onPressed: () {},
                       ),
                     ],
@@ -116,12 +136,16 @@ class ProfileScreen extends StatelessWidget {
                     children: [
                       CircleAvatar(
                         radius: 36,
-                        backgroundColor:
-                            AppColors.canvas.withValues(alpha: 0.2),
+                        backgroundColor: AppColors.canvas.withValues(
+                          alpha: 0.2,
+                        ),
                         backgroundImage: avatar,
                         child: avatar == null
-                            ? const Icon(Icons.person_rounded,
-                                size: 40, color: AppColors.canvas)
+                            ? const Icon(
+                                Icons.person_rounded,
+                                size: 40,
+                                color: AppColors.canvas,
+                              )
                             : null,
                       ),
                       const SizedBox(width: 16),
@@ -129,34 +153,61 @@ class ProfileScreen extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(name,
-                                style: AppTextStyles.sectionTitle.copyWith(
-                                    color: AppColors.canvas, fontSize: 18)),
+                            Text(
+                              name,
+                              style: AppTextStyles.sectionTitle.copyWith(
+                                color: AppColors.canvas,
+                                fontSize: 18,
+                              ),
+                            ),
                             const SizedBox(height: 4),
-                            Text(email,
-                                style: AppTextStyles.caption.copyWith(
-                                    color: AppColors.canvas
-                                        .withValues(alpha: 0.7))),
+                            Text(
+                              email,
+                              style: AppTextStyles.caption.copyWith(
+                                color: AppColors.canvas.withValues(alpha: 0.7),
+                              ),
+                            ),
                             if (phone.isNotEmpty) ...[
                               const SizedBox(height: 2),
-                              Text(phone,
-                                  style: AppTextStyles.caption.copyWith(
-                                      color: AppColors.canvas
-                                          .withValues(alpha: 0.6))),
+                              Text(
+                                phone,
+                                style: AppTextStyles.caption.copyWith(
+                                  color: AppColors.canvas.withValues(
+                                    alpha: 0.6,
+                                  ),
+                                ),
+                              ),
+                            ],
+                            if (address.isNotEmpty) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                address,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTextStyles.caption.copyWith(
+                                  color: AppColors.canvas.withValues(
+                                    alpha: 0.6,
+                                  ),
+                                ),
+                              ),
                             ],
                             const SizedBox(height: 8),
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 4),
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
                               decoration: BoxDecoration(
-                                color:
-                                    AppColors.canvas.withValues(alpha: 0.15),
+                                color: AppColors.canvas.withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(20),
                               ),
-                              child: Text(_roleLabel(role),
-                                  style: AppTextStyles.badge.copyWith(
-                                      color: AppColors.canvas,
-                                      fontSize: 11)),
+                              child: Text(
+                                _roleLabel(role),
+                                style: AppTextStyles.badge.copyWith(
+                                  color: AppColors.canvas,
+                                  fontSize: 11,
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -188,25 +239,34 @@ class ProfileScreen extends StatelessWidget {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
-              child: Text('Tài khoản',
-                  style: AppTextStyles.overline.copyWith(
-                      color: AppColors.muted, letterSpacing: 1.0)),
+              child: Text(
+                'Tài khoản',
+                style: AppTextStyles.overline.copyWith(
+                  color: AppColors.muted,
+                  letterSpacing: 1.0,
+                ),
+              ),
             ),
           ),
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: _menuGroup([
-                _MenuItem(Icons.edit_outlined, 'Chỉnh sửa hồ sơ',
-                    AppColors.primary,
-                    onTap: () => Navigator.pushNamed(
-                        context, AppRouter.editProfile)),
-                _MenuItem(Icons.receipt_long_outlined, 'Lịch sử đơn hàng',
-                    AppColors.accent,
-                    onTap: () => Navigator.pushNamed(
-                        context, AppRouter.orderHistory)),
                 _MenuItem(
-                    Icons.favorite_outline, 'Yêu thích', AppColors.error),
+                  Icons.edit_outlined,
+                  'Chỉnh sửa hồ sơ',
+                  AppColors.primary,
+                  onTap: () =>
+                      Navigator.pushNamed(context, AppRouter.editProfile),
+                ),
+                _MenuItem(
+                  Icons.receipt_long_outlined,
+                  'Lịch sử đơn hàng',
+                  AppColors.accent,
+                  onTap: () =>
+                      Navigator.pushNamed(context, AppRouter.orderHistory),
+                ),
+                _MenuItem(Icons.favorite_outline, 'Yêu thích', AppColors.error),
               ]),
             ),
           ),
@@ -214,9 +274,13 @@ class ProfileScreen extends StatelessWidget {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
-              child: Text('Hỗ trợ',
-                  style: AppTextStyles.overline.copyWith(
-                      color: AppColors.muted, letterSpacing: 1.0)),
+              child: Text(
+                'Hỗ trợ',
+                style: AppTextStyles.overline.copyWith(
+                  color: AppColors.muted,
+                  letterSpacing: 1.0,
+                ),
+              ),
             ),
           ),
           SliverToBoxAdapter(
@@ -247,6 +311,12 @@ class ProfileScreen extends StatelessWidget {
                   AppColors.primaryLight,
                   onTap: () => Navigator.pushNamed(context, AppRouter.terms),
                 ),
+                _MenuItem(
+                  Icons.info_outline_rounded,
+                  'Về AgriLink',
+                  AppColors.muted,
+                ),
+                ),
               ]),
             ),
           ),
@@ -256,19 +326,24 @@ class ProfileScreen extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
               child: OutlinedButton.icon(
-                onPressed:
-                    auth.isLoading ? null : () => _handleLogout(context),
-                icon: const Icon(Icons.logout_rounded,
-                    color: AppColors.error, size: 20),
-                label: Text('Đăng xuất',
-                    style: AppTextStyles.button
-                        .copyWith(color: AppColors.error)),
+                onPressed: auth.isLoading ? null : () => _handleLogout(context),
+                icon: const Icon(
+                  Icons.logout_rounded,
+                  color: AppColors.error,
+                  size: 20,
+                ),
+                label: Text(
+                  'Đăng xuất',
+                  style: AppTextStyles.button.copyWith(color: AppColors.error),
+                ),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   side: BorderSide(
-                      color: AppColors.error.withValues(alpha: 0.3)),
+                    color: AppColors.error.withValues(alpha: 0.3),
+                  ),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14)),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
               ),
             ),
@@ -282,12 +357,15 @@ class ProfileScreen extends StatelessWidget {
     return Expanded(
       child: Column(
         children: [
-          Text(value,
-              style: AppTextStyles.sectionTitle
-                  .copyWith(fontSize: 20, color: AppColors.ink)),
+          Text(
+            value,
+            style: AppTextStyles.sectionTitle.copyWith(
+              fontSize: 20,
+              color: AppColors.ink,
+            ),
+          ),
           const SizedBox(height: 2),
-          Text(label,
-              style: AppTextStyles.caption.copyWith(fontSize: 12)),
+          Text(label, style: AppTextStyles.caption.copyWith(fontSize: 12)),
         ],
       ),
     );
@@ -295,9 +373,10 @@ class ProfileScreen extends StatelessWidget {
 
   Widget _statDivider() {
     return Container(
-        width: 1,
-        height: 30,
-        color: AppColors.surfaceDivider.withValues(alpha: 0.4));
+      width: 1,
+      height: 30,
+      color: AppColors.surfaceDivider.withValues(alpha: 0.4),
+    );
   }
 
   Widget _menuGroup(List<_MenuItem> items) {
@@ -306,7 +385,8 @@ class ProfileScreen extends StatelessWidget {
         color: AppColors.canvas,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-            color: AppColors.surfaceDivider.withValues(alpha: 0.3)),
+          color: AppColors.surfaceDivider.withValues(alpha: 0.3),
+        ),
       ),
       child: Column(
         children: items.asMap().entries.map((e) {
@@ -324,18 +404,25 @@ class ProfileScreen extends StatelessWidget {
                   ),
                   child: Icon(item.icon, color: item.color, size: 20),
                 ),
-                title: Text(item.label,
-                    style: AppTextStyles.subtitle
-                        .copyWith(fontWeight: FontWeight.w500)),
-                trailing: const Icon(Icons.arrow_forward_ios_rounded,
-                    size: 14, color: AppColors.muted),
+                title: Text(
+                  item.label,
+                  style: AppTextStyles.subtitle.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                trailing: const Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 14,
+                  color: AppColors.muted,
+                ),
                 onTap: item.onTap,
               ),
               if (!isLast)
                 Divider(
-                    height: 1,
-                    indent: 60,
-                    color: AppColors.surfaceDivider.withValues(alpha: 0.3)),
+                  height: 1,
+                  indent: 60,
+                  color: AppColors.surfaceDivider.withValues(alpha: 0.3),
+                ),
             ],
           );
         }).toList(),

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../data/services/auth_provider.dart';
+import '../../data/services/storage_service.dart';
 import '../../widgets/common/agri_button.dart';
 import '../../widgets/common/agri_text_field.dart';
 
@@ -18,6 +21,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final _fullNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _avatarUrlController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _imagePicker = ImagePicker();
+
+  bool _isUploadingAvatar = false;
 
   @override
   void initState() {
@@ -26,6 +33,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _fullNameController.text = user?.fullName ?? '';
     _emailController.text = user?.email ?? '';
     _avatarUrlController.text = user?.avatarUrl ?? '';
+    _addressController.text = user?.address ?? '';
   }
 
   @override
@@ -33,6 +41,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _fullNameController.dispose();
     _emailController.dispose();
     _avatarUrlController.dispose();
+    _addressController.dispose();
     super.dispose();
   }
 
@@ -46,24 +55,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return null;
   }
 
-  String? _validateEmail(String? value) {
-    final email = value?.trim() ?? '';
-    if (email.isEmpty) {
-      return null;
-    }
-
-    final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
-    if (!emailRegex.hasMatch(email)) {
-      return 'Email không hợp lệ';
-    }
-    return null;
-  }
-
   String? _validateAvatarUrl(String? value) {
     final avatarUrl = value?.trim() ?? '';
-    if (avatarUrl.isEmpty) {
-      return null;
-    }
+    if (avatarUrl.isEmpty) return null;
 
     final uri = Uri.tryParse(avatarUrl);
     if (uri == null || !uri.isAbsolute || uri.host.isEmpty) {
@@ -75,20 +69,51 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return null;
   }
 
-  void _saveProfile() {
-    if (!_formKey.currentState!.validate()) {
-      return;
+  Future<void> _pickAndUploadAvatar() async {
+    final apiService = Provider.of<AuthProvider>(
+      context,
+      listen: false,
+    ).apiService;
+    final picked = await _imagePicker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+      maxWidth: 1200,
+    );
+    if (picked == null) return;
+
+    setState(() => _isUploadingAvatar = true);
+    try {
+      final storageService = StorageService(apiService);
+      final url = await storageService.uploadImage(picked);
+      if (!mounted) return;
+
+      setState(() => _avatarUrlController.text = url);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tải ảnh đại diện thành công!')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      final message = e.toString().replaceAll('Exception:', '').trim();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: AppColors.error),
+      );
+    } finally {
+      if (mounted) setState(() => _isUploadingAvatar = false);
     }
+  }
 
-    final fullName = _fullNameController.text.trim();
-    final email = _emailController.text.trim();
-    final avatarUrl = _avatarUrlController.text.trim();
+  void _saveProfile() {
+    if (!_formKey.currentState!.validate()) return;
+
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-
     authProvider.updateProfile(
-      fullName: fullName,
-      email: email.isEmpty ? null : email,
-      avatarUrl: avatarUrl.isEmpty ? null : avatarUrl,
+      fullName: _fullNameController.text.trim(),
+      avatarUrl: _avatarUrlController.text.trim().isEmpty
+          ? null
+          : _avatarUrlController.text.trim(),
+      address: _addressController.text.trim().isEmpty
+          ? null
+          : _addressController.text.trim(),
       onSuccess: () {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Cập nhật hồ sơ thành công!')),
@@ -132,19 +157,43 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Center(
-                  child: CircleAvatar(
-                    radius: 46,
-                    backgroundColor: AppColors.primaryUltraLight,
-                    backgroundImage: canPreviewAvatar
-                        ? NetworkImage(avatarUrl)
-                        : null,
-                    child: canPreviewAvatar
-                        ? null
-                        : const Icon(
-                            Icons.person,
-                            size: 54,
-                            color: AppColors.primary,
-                          ),
+                  child: Column(
+                    children: [
+                      CircleAvatar(
+                        radius: 46,
+                        backgroundColor: AppColors.primaryUltraLight,
+                        backgroundImage: canPreviewAvatar
+                            ? NetworkImage(avatarUrl)
+                            : null,
+                        child: canPreviewAvatar
+                            ? null
+                            : const Icon(
+                                Icons.person,
+                                size: 54,
+                                color: AppColors.primary,
+                              ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextButton.icon(
+                        onPressed: _isUploadingAvatar
+                            ? null
+                            : _pickAndUploadAvatar,
+                        icon: _isUploadingAvatar
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.upload_rounded),
+                        label: Text(
+                          _isUploadingAvatar
+                              ? 'Đang tải ảnh...'
+                              : 'Tải ảnh lên',
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 28),
@@ -167,11 +216,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   controller: _emailController,
                   hintText: 'Email',
                   keyboardType: TextInputType.emailAddress,
+                  readOnly: true,
                   prefixIcon: const Icon(
                     Icons.email_outlined,
                     color: AppColors.muted,
                   ),
-                  validator: _validateEmail,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Email dùng để đăng nhập nên chưa chỉnh sửa trong MVP.',
+                  style: AppTextStyles.caption.copyWith(color: AppColors.muted),
                 ),
                 const SizedBox(height: 16),
                 AgriTextField(
@@ -187,14 +241,25 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Upload ảnh thật sẽ được xử lý ở task Avatar Upload. Hiện tại bạn có thể dùng URL ảnh hợp lệ.',
+                  'Bạn có thể tải ảnh từ thiết bị hoặc dán URL ảnh hợp lệ.',
                   style: AppTextStyles.caption.copyWith(color: AppColors.muted),
+                ),
+                const SizedBox(height: 16),
+                AgriTextField(
+                  controller: _addressController,
+                  hintText: 'Địa chỉ',
+                  keyboardType: TextInputType.streetAddress,
+                  maxLines: 2,
+                  prefixIcon: const Icon(
+                    Icons.location_on_outlined,
+                    color: AppColors.muted,
+                  ),
                 ),
                 const SizedBox(height: 32),
                 AgriButton(
                   text: 'Lưu thay đổi',
-                  onPressed: _saveProfile,
-                  isLoading: authProvider.isLoading,
+                  onPressed: _isUploadingAvatar ? null : _saveProfile,
+                  isLoading: authProvider.isLoading || _isUploadingAvatar,
                 ),
               ],
             ),

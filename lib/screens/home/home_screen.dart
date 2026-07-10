@@ -5,6 +5,7 @@ import '../../core/constants/app_text_styles.dart';
 import '../../core/constants/app_shadows.dart';
 import '../../data/services/auth_provider.dart';
 import '../../data/providers/cart_provider.dart';
+import '../../data/providers/wishlist_provider.dart';
 import '../dashboard/farmer/farmer_dashboard_screen.dart';
 import '../dashboard/supplier/supplier_dashboard_screen.dart';
 import '../dashboard/customer/customer_dashboard_screen.dart';
@@ -13,6 +14,7 @@ import '../cart/cart_screen.dart';
 import '../orders/order_history_screen.dart';
 import '../orders/seller_order_screen.dart';
 import '../profile/profile_screen.dart';
+import '../dashboard/farmer/my_products_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -23,6 +25,24 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
+  late final PageController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(initialPage: _currentIndex);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<WishlistProvider>().fetchWishlistIds();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -79,7 +99,7 @@ class _HomeScreenState extends State<HomeScreen> {
         role == 'farmer'
             ? const FarmerDashboardScreen()
             : const SupplierDashboardScreen(),
-        const MarketplaceScreen(),
+        const MyProductsScreen(),
         const SellerOrderScreen(),
         const ProfileScreen(),
       ]);
@@ -114,7 +134,11 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return Scaffold(
-      body: IndexedStack(index: _currentIndex, children: screens),
+      body: PageView(
+        controller: _pageController,
+        physics: const NeverScrollableScrollPhysics(), // Disable swipe if we only want tap navigation
+        children: screens,
+      ),
       bottomNavigationBar: _buildCustomBottomNav(navItems),
     );
   }
@@ -136,7 +160,14 @@ class _HomeScreenState extends State<HomeScreen> {
               final isActive = _currentIndex == index;
 
               return _buildNavItem(item, isActive, () {
-                setState(() => _currentIndex = index);
+                if (_currentIndex != index) {
+                  setState(() => _currentIndex = index);
+                  _pageController.animateToPage(
+                    index,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOutCubic,
+                  );
+                }
               });
             }).toList(),
           ),

@@ -7,6 +7,8 @@ import '../../data/services/api_service.dart';
 import '../../widgets/product/product_card.dart';
 import '../../widgets/common/animated_list_item.dart';
 import '../../router/app_router.dart';
+import 'package:provider/provider.dart';
+import '../../data/services/product_service.dart';
 
 class MarketplaceScreen extends StatefulWidget {
   const MarketplaceScreen({super.key});
@@ -76,6 +78,17 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     }
   }
 
+  void _onCategorySelected(int index) {
+    if (_selectedCategoryIndex == index) return;
+    setState(() => _selectedCategoryIndex = index);
+    _fetchProducts();
+  }
+
+  void _onSearchChanged(String query) {
+    _searchQuery = query;
+    _fetchProducts();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -90,6 +103,15 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
             elevation: 0,
             title: Text('Chợ nông sản', style: AppTextStyles.sectionTitle),
             centerTitle: true,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.favorite_border, color: AppColors.error),
+                onPressed: () {
+                  Navigator.pushNamed(context, AppRouter.wishlist);
+                },
+              ),
+              const SizedBox(width: 8),
+            ],
           ),
 
           // ── Search bar ──
@@ -123,6 +145,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                       color: AppColors.muted.withValues(alpha: 0.6),
                     ),
                   ),
+                  onSubmitted: _onSearchChanged,
                 ),
               ),
             ),
@@ -141,10 +164,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                   return Padding(
                     padding: const EdgeInsets.only(right: 8),
                     child: GestureDetector(
-                      onTap: () {
-                        setState(() => _selectedCategoryIndex = index);
-                        _fetchProducts();
-                      },
+                      onTap: () => _onCategorySelected(index),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 250),
                         padding: const EdgeInsets.symmetric(
@@ -190,8 +210,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                       _error != null
                           ? 'Lỗi tải dữ liệu'
                           : '${_products.length} sản phẩm',
-                      style:
-                          AppTextStyles.caption.copyWith(color: AppColors.muted),
+                      style: AppTextStyles.caption.copyWith(color: AppColors.muted),
                     ),
             ),
           ),

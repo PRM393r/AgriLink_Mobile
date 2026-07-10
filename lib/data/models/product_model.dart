@@ -19,6 +19,8 @@ class ProductModel {
   final String? province;
   final String? sellerName;
 
+  String? get primaryImageUrl => images.isNotEmpty ? images.first : null;
+
   const ProductModel({
     required this.id,
     required this.name,
@@ -97,8 +99,8 @@ class ProductModel {
       'expiryDate': expiryDate?.toIso8601String(),
       'sellerId': sellerId,
       'sellerType': sellerType,
-      'images': images,
-      'certifications': certifications,
+      'images': images.map((url) => {'url': url, 'isPrimary': false}).toList(),
+      'certifications': certifications.map((c) => {'name': c}).toList(),
       'category': category,
     };
   }

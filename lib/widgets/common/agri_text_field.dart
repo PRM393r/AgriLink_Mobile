@@ -8,9 +8,11 @@ class AgriTextField extends StatelessWidget {
   final String? errorText;
   final TextInputType keyboardType;
   final bool obscureText;
+  final bool readOnly;
   final Widget? prefixIcon;
   final Widget? suffixIcon;
   final int? maxLength;
+  final int? maxLines;
   final String? Function(String?)? validator;
   final ValueChanged<String>? onChanged;
 
@@ -22,9 +24,11 @@ class AgriTextField extends StatelessWidget {
     this.errorText,
     this.keyboardType = TextInputType.text,
     this.obscureText = false,
+    this.readOnly = false,
     this.prefixIcon,
     this.suffixIcon,
     this.maxLength,
+    this.maxLines = 1,
     this.validator,
     this.onChanged,
   });
@@ -35,7 +39,9 @@ class AgriTextField extends StatelessWidget {
       controller: controller,
       keyboardType: keyboardType,
       obscureText: obscureText,
+      readOnly: readOnly,
       maxLength: maxLength,
+      maxLines: obscureText ? 1 : maxLines,
       validator: validator,
       onChanged: onChanged,
       style: AppTextStyles.body,

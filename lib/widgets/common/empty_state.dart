@@ -50,7 +50,6 @@ class EmptyState extends StatelessWidget {
               AgriButton(
                 text: actionLabel!,
                 onPressed: onActionPressed,
-                width: 200,
               ),
             ]
           ],

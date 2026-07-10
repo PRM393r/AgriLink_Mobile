@@ -22,11 +22,11 @@ class AuthProvider extends ChangeNotifier {
     _notificationService = NotificationService(_apiService);
   }
 
-  UserModel? get currentUser        => _currentUser;
-  bool       get isLoading          => _isLoading;
-  bool       get isAuthenticated    => _currentUser != null;
-  String?    get pendingEmail       => _pendingEmail;
-  ApiService get apiService         => _apiService;
+  UserModel? get currentUser => _currentUser;
+  bool get isLoading => _isLoading;
+  bool get isAuthenticated => _currentUser != null;
+  String? get pendingEmail => _pendingEmail;
+  ApiService get apiService => _apiService;
   NotificationService get notificationService => _notificationService;
 
   void _setLoading(bool v) {
@@ -85,6 +85,7 @@ class AuthProvider extends ChangeNotifier {
     _setLoading(true);
     try {
       await _authRepository.verifyEmail(email: email, code: code);
+      await TokenStorage.savePendingRoleEmail(email);
       _setLoading(false);
       onSuccess();
     } catch (e) {
@@ -119,12 +120,16 @@ class AuthProvider extends ChangeNotifier {
   }) async {
     _setLoading(true);
     try {
-      final user = await _authRepository.login(email: email, password: password);
+      final user = await _authRepository.login(
+        email: email,
+        password: password,
+      );
       _currentUser = user;
       _setLoading(false);
-      // isNewUser = chưa chọn role (role = default 'customer' và fullName rỗng)
-      final isNew = user.fullName.isEmpty;
-      onSuccess(isNew);
+      final shouldChooseRole = await TokenStorage.isPendingRoleEmail(
+        user.email,
+      );
+      onSuccess(shouldChooseRole);
     } catch (e) {
       _setLoading(false);
       onError(e.toString().replaceAll('Exception:', '').trim());
@@ -141,6 +146,7 @@ class AuthProvider extends ChangeNotifier {
     try {
       final updated = await _authRepository.updateRole(role);
       _currentUser = updated;
+      await TokenStorage.clearPendingRoleEmail();
       _setLoading(false);
       onSuccess();
     } catch (e) {
@@ -149,12 +155,12 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  // ── logout ���───────────────────────────────────────────────────────────────
-  /// Updates the user's editable profile fields on NestJS and updates state.
+  // ── Profile ───────────────────────────────────────────────────────────────
+  /// Updates the user's editable profile fields on the AgriLink Express backend.
   Future<void> updateProfile({
     String? fullName,
-    String? email,
     String? avatarUrl,
+    String? address,
     required VoidCallback onSuccess,
     required Function(String) onError,
   }) async {
@@ -163,8 +169,8 @@ class AuthProvider extends ChangeNotifier {
     if (_currentUser?.id == "mock_user_id") {
       _currentUser = _currentUser?.copyWith(
         fullName: fullName ?? _currentUser?.fullName,
-        email: email ?? _currentUser?.email,
         avatarUrl: avatarUrl ?? _currentUser?.avatarUrl,
+        address: address ?? _currentUser?.address,
       );
       _setLoading(false);
       onSuccess();
@@ -174,8 +180,8 @@ class AuthProvider extends ChangeNotifier {
     try {
       final updatedUser = await _authRepository.updateProfile(
         fullName: fullName,
-        email: email,
         avatarUrl: avatarUrl,
+        address: address,
       );
       _currentUser = updatedUser;
       _setLoading(false);
@@ -186,7 +192,8 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Signs out of Firebase and deletes stored NestJS JWT token.
+  // ── Logout ────────────────────────────────────────────────────────────────
+  /// Signs out of the standalone backend session and clears local JWT tokens.
   Future<void> logout() async {
     _setLoading(true);
     try {

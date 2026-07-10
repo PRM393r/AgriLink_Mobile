@@ -22,6 +22,11 @@ import '../screens/support/terms_screen.dart';
 import '../screens/support/privacy_screen.dart';
 import '../screens/support/how_to_buy_screen.dart';
 
+import '../screens/dashboard/farmer/my_products_screen.dart';
+import '../screens/dashboard/farmer/product_form_screen.dart';
+import '../screens/wishlist/wishlist_screen.dart';
+import '../screens/reviews/review_form_screen.dart';
+
 class AppRouter {
   const AppRouter._();
 
@@ -40,17 +45,21 @@ class AppRouter {
   static const String customer = '/customer';
   static const String marketplace = '/marketplace';
   static const String productDetail = '/product-detail';
+  static const String myProducts = '/my-products';
+  static const String productForm = '/product-form';
+  static const String wishlist = '/wishlist';
   static const String editProfile = '/edit-profile';
   static const String orderTracking = '/order-tracking';
   static const String faq = '/faq';
   static const String terms = '/terms';
   static const String privacy = '/privacy';
   static const String howToBuy = '/how-to-buy';
+  static const String reviewForm = '/review-form';
 
   static Route<dynamic>? onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
       case splash:
-        return MaterialPageRoute(builder: (_) => const SplashScreen());
+        return MaterialPageRoute(builder: (_) => const SplashScreen(), settings: settings);
       case login:
         return FadeScaleRoute(page: const LoginScreen(), settings: settings);
       case register:
@@ -79,6 +88,12 @@ class AppRouter {
         return SlideRoute(page: const MarketplaceScreen(), settings: settings);
       case productDetail:
         return SlideUpRoute(page: const ProductDetailScreen(), settings: settings);
+      case myProducts:
+        return SlideRoute(page: const MyProductsScreen(), settings: settings);
+      case productForm:
+        return SlideRoute(page: const ProductFormScreen(), settings: settings);
+      case wishlist:
+        return SlideRoute(page: const WishlistScreen(), settings: settings);
       case editProfile:
         return SlideRoute(page: const EditProfileScreen(), settings: settings);
       case orderTracking:
@@ -99,6 +114,8 @@ class AppRouter {
         return SlideRoute(page: const PrivacyScreen(), settings: settings);
       case howToBuy:
         return SlideRoute(page: const HowToBuyScreen(), settings: settings);
+      case reviewForm:
+        return SlideUpRoute(page: const ReviewFormScreen(), settings: settings);
       default:
         return MaterialPageRoute(
           builder: (_) => Scaffold(

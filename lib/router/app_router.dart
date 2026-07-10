@@ -16,6 +16,11 @@ import '../screens/dashboard/customer/customer_dashboard_screen.dart';
 import '../screens/marketplace/marketplace_screen.dart';
 import '../screens/marketplace/product_detail_screen.dart';
 import '../screens/profile/edit_profile_screen.dart';
+import '../screens/orders/order_tracking_screen.dart';
+import '../screens/support/faq_screen.dart';
+import '../screens/support/terms_screen.dart';
+import '../screens/support/privacy_screen.dart';
+import '../screens/support/how_to_buy_screen.dart';
 
 import '../screens/dashboard/farmer/my_products_screen.dart';
 import '../screens/dashboard/farmer/product_form_screen.dart';
@@ -44,6 +49,11 @@ class AppRouter {
   static const String productForm = '/product-form';
   static const String wishlist = '/wishlist';
   static const String editProfile = '/edit-profile';
+  static const String orderTracking = '/order-tracking';
+  static const String faq = '/faq';
+  static const String terms = '/terms';
+  static const String privacy = '/privacy';
+  static const String howToBuy = '/how-to-buy';
   static const String reviewForm = '/review-form';
 
   static Route<dynamic>? onGenerateRoute(RouteSettings settings) {
@@ -55,10 +65,7 @@ class AppRouter {
       case register:
         return SlideRoute(page: const RegisterScreen(), settings: settings);
       case verifyEmail:
-        return SlideRoute(
-          page: const VerifyEmailScreen(),
-          settings: settings,
-        );
+        return SlideRoute(page: const VerifyEmailScreen(), settings: settings);
       case rolePicker:
         return FadeScaleRoute(page: const RolePickerScreen(), settings: settings);
       case home:
@@ -72,15 +79,11 @@ class AppRouter {
       case orderHistory:
         return SlideRoute(page: const OrderHistoryScreen(), settings: settings);
       case orderDetail:
-        return SlideUpRoute(
-          page: const OrderDetailScreen(),
-          settings: settings,
-        );
+        return SlideUpRoute(page: const OrderDetailScreen(), settings: settings);
       case sellerOrders:
         return SlideRoute(page: const SellerOrderScreen(), settings: settings);
       case customer:
-        return FadeScaleRoute(
-            page: const CustomerDashboardScreen(), settings: settings);
+        return FadeScaleRoute(page: const CustomerDashboardScreen(), settings: settings);
       case marketplace:
         return SlideRoute(page: const MarketplaceScreen(), settings: settings);
       case productDetail:
@@ -93,6 +96,24 @@ class AppRouter {
         return SlideRoute(page: const WishlistScreen(), settings: settings);
       case editProfile:
         return SlideRoute(page: const EditProfileScreen(), settings: settings);
+      case orderTracking:
+        final args = settings.arguments as Map<String, dynamic>;
+        return SlideUpRoute(
+          page: OrderTrackingScreen(
+            orderId: args['orderId'] as String,
+            orderCode: args['orderCode'] as String,
+            token: args['token'] as String?,
+          ),
+          settings: settings,
+        );
+      case faq:
+        return SlideRoute(page: const FaqScreen(), settings: settings);
+      case terms:
+        return SlideRoute(page: const TermsScreen(), settings: settings);
+      case privacy:
+        return SlideRoute(page: const PrivacyScreen(), settings: settings);
+      case howToBuy:
+        return SlideRoute(page: const HowToBuyScreen(), settings: settings);
       case reviewForm:
         return SlideUpRoute(page: const ReviewFormScreen(), settings: settings);
       default:

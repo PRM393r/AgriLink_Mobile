@@ -1,3 +1,16 @@
+class StatusHistoryEntry {
+  final String status;
+  final DateTime changedAt;
+  const StatusHistoryEntry({required this.status, required this.changedAt});
+  factory StatusHistoryEntry.fromJson(Map<String, dynamic> json) =>
+      StatusHistoryEntry(
+        status: json['status'] as String? ?? '',
+        changedAt: json['changedAt'] != null
+            ? DateTime.tryParse(json['changedAt'] as String) ?? DateTime.now()
+            : DateTime.now(),
+      );
+}
+
 class OrderModel {
   final String id;
   final String orderCode;
@@ -11,8 +24,10 @@ class OrderModel {
   final String paymentStatus;
   final String? note;
   final String? cancelledReason;
+  final String? cancelReason;
   final List<OrderItemModel> items;
   final Map<String, dynamic>? shippingAddressSnapshot;
+  final List<StatusHistoryEntry> statusHistory;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -29,18 +44,20 @@ class OrderModel {
     required this.paymentStatus,
     this.note,
     this.cancelledReason,
+    this.cancelReason,
     required this.items,
     this.shippingAddressSnapshot,
+    this.statusHistory = const [],
     required this.createdAt,
     required this.updatedAt,
   });
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {
     return OrderModel(
-      id: json['id'] as String? ?? '',
+      id: (json['_id'] ?? json['id'])?.toString() ?? '',
       orderCode: json['orderCode'] as String? ?? '',
-      buyerId: json['buyerId'] as String? ?? '',
-      sellerId: json['sellerId'] as String? ?? '',
+      buyerId: (json['buyerId'] is Map ? json['buyerId']['_id'] : json['buyerId'])?.toString() ?? '',
+      sellerId: (json['sellerId'] is Map ? json['sellerId']['_id'] : json['sellerId'])?.toString() ?? '',
       status: json['status'] as String? ?? 'pending',
       subtotal: (json['subtotal'] as num?)?.toDouble() ?? 0.0,
       shippingFee: (json['shippingFee'] as num?)?.toDouble() ?? 0.0,
@@ -49,11 +66,16 @@ class OrderModel {
       paymentStatus: json['paymentStatus'] as String? ?? 'unpaid',
       note: json['note'] as String?,
       cancelledReason: json['cancelledReason'] as String?,
+      cancelReason: json['cancelReason'] as String?,
       items: (json['items'] as List<dynamic>?)
               ?.map((e) => OrderItemModel.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const [],
       shippingAddressSnapshot: json['shippingAddressSnapshot'] as Map<String, dynamic>?,
+      statusHistory: (json['statusHistory'] as List<dynamic>?)
+              ?.map((e) => StatusHistoryEntry.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'] as String) ?? DateTime.now()
           : DateTime.now(),
@@ -103,6 +125,10 @@ class OrderItemModel {
   String get productName => productSnapshot['name'] as String? ?? 'Sản phẩm';
   String get productUnit => productSnapshot['unit'] as String? ?? '';
   String? get productImageUrl {
+    // Backend productSnapshot stores imageUrl as string
+    final url = productSnapshot['imageUrl'];
+    if (url is String && url.isNotEmpty) return url;
+    // Fallback: images array format
     final imgs = productSnapshot['images'];
     if (imgs is List && imgs.isNotEmpty) {
       final first = imgs.first;
@@ -113,8 +139,8 @@ class OrderItemModel {
 
   factory OrderItemModel.fromJson(Map<String, dynamic> json) {
     return OrderItemModel(
-      id: json['id'] as String? ?? '',
-      productId: json['productId'] as String?,
+      id: (json['_id'] ?? json['id'])?.toString() ?? '',
+      productId: (json['productId'] is Map ? json['productId']['_id'] : json['productId'])?.toString(),
       productSnapshot: json['productSnapshot'] as Map<String, dynamic>? ?? {},
       quantity: (json['quantity'] as num?)?.toDouble() ?? 1.0,
       unitPrice: (json['unitPrice'] as num?)?.toDouble() ?? 0.0,

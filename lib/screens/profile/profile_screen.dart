@@ -288,19 +288,34 @@ class ProfileScreen extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: _menuGroup([
                 _MenuItem(
-                  Icons.help_outline_rounded,
-                  'Trung tâm hỗ trợ',
+                  Icons.menu_book_outlined,
+                  'Hướng dẫn mua hàng',
                   AppColors.info,
+                  onTap: () => Navigator.pushNamed(context, AppRouter.howToBuy),
+                ),
+                _MenuItem(
+                  Icons.help_outline_rounded,
+                  'Câu hỏi thường gặp (FAQ)',
+                  AppColors.accent,
+                  onTap: () => Navigator.pushNamed(context, AppRouter.faq),
                 ),
                 _MenuItem(
                   Icons.security_outlined,
-                  'Bảo mật & Quyền riêng tư',
+                  'Chính sách bảo mật',
                   AppColors.warning,
+                  onTap: () => Navigator.pushNamed(context, AppRouter.privacy),
+                ),
+                _MenuItem(
+                  Icons.gavel_outlined,
+                  'Điều khoản sử dụng',
+                  AppColors.primaryLight,
+                  onTap: () => Navigator.pushNamed(context, AppRouter.terms),
                 ),
                 _MenuItem(
                   Icons.info_outline_rounded,
                   'Về AgriLink',
-                  AppColors.primaryLight,
+                  AppColors.muted,
+                ),
                 ),
               ]),
             ),

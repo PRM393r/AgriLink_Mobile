@@ -26,7 +26,8 @@ class OrderRepository {
 
   Future<List<OrderModel>> getMyOrders({String? status}) async {
     try {
-      final params = <String, dynamic>{'limit': 50};
+      // role=buyer: farmer/supplier cũng có thể xem đơn họ đã mua
+      final params = <String, dynamic>{'limit': 50, 'role': 'buyer'};
       if (status != null && status != 'all') params['status'] = status;
 
       final response = await _apiService.get(
@@ -67,11 +68,13 @@ class OrderRepository {
     }
   }
 
-  Future<OrderModel> updateOrderStatus(String id, String status) async {
+  Future<OrderModel> updateOrderStatus(String id, String status, {String? cancelReason}) async {
     try {
+      final body = <String, dynamic>{'status': status};
+      if (cancelReason != null && cancelReason.isNotEmpty) body['cancelReason'] = cancelReason;
       final response = await _apiService.patch(
         '${ApiConstants.orders}/$id/status',
-        data: {'status': status},
+        data: body,
       );
       final data = response.data;
       if (data is Map<String, dynamic> && data['data'] != null) {

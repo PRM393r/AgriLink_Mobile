@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../data/models/product_model.dart';
+import '../../data/repositories/product_repository.dart';
+import '../../data/services/api_service.dart';
 import '../../widgets/product/product_card.dart';
 import '../../widgets/common/animated_list_item.dart';
 import '../../router/app_router.dart';
@@ -16,7 +18,13 @@ class MarketplaceScreen extends StatefulWidget {
 }
 
 class _MarketplaceScreenState extends State<MarketplaceScreen> {
+  late final ProductRepository _repo;
+
   int _selectedCategoryIndex = 0;
+  String _searchQuery = '';
+  List<ProductModel> _products = [];
+  bool _isLoading = true;
+  String? _error;
 
   final List<String> _filterChips = [
     'Tất cả',
@@ -27,32 +35,33 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     '🐟 Thủy sản',
   ];
 
-  bool _isLoading = true;
-  List<ProductModel> _products = [];
-  String _searchQuery = '';
+  final Map<int, String> _chipToCategory = {
+    1: 'Rau củ',
+    2: 'Trái cây',
+    3: 'Lúa gạo',
+    4: 'Vật tư',
+    5: 'Thủy hải sản',
+  };
 
   @override
   void initState() {
     super.initState();
+    _repo = ProductRepository(ApiService());
     _fetchProducts();
   }
 
   Future<void> _fetchProducts() async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
     try {
-      final productService = context.read<ProductService>();
-      String? category;
-      if (_selectedCategoryIndex > 0) {
-        // Remove emoji from category name for API querying
-        final rawCat = _filterChips[_selectedCategoryIndex];
-        category = rawCat.substring(rawCat.indexOf(' ') + 1).trim();
-      }
-      
-      final products = await productService.fetchMarketplaceProducts(
+      final category = _chipToCategory[_selectedCategoryIndex];
+      final products = await _repo.getProducts(
         category: category,
-        search: _searchQuery.isNotEmpty ? _searchQuery : null,
+        search: _searchQuery.isEmpty ? null : _searchQuery,
+        limit: 100,
       );
-      
       if (mounted) {
         setState(() {
           _products = products;
@@ -61,10 +70,10 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi tải sản phẩm: $e')),
-        );
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
       }
     }
   }
@@ -77,7 +86,6 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
 
   void _onSearchChanged(String query) {
     _searchQuery = query;
-    // We could add debouncer here
     _fetchProducts();
   }
 
@@ -93,10 +101,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
             snap: true,
             backgroundColor: AppColors.canvas,
             elevation: 0,
-            title: Text(
-              'Chợ nông sản',
-              style: AppTextStyles.sectionTitle,
-            ),
+            title: Text('Chợ nông sản', style: AppTextStyles.sectionTitle),
             centerTitle: true,
             actions: [
               IconButton(
@@ -122,6 +127,10 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                   ),
                 ),
                 child: TextField(
+                  onChanged: (v) {
+                    _searchQuery = v;
+                    _fetchProducts();
+                  },
                   decoration: InputDecoration(
                     hintText: 'Tìm kiếm nông sản sạch...',
                     prefixIcon: const Icon(Icons.search_rounded,
@@ -191,49 +200,93 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
             ),
           ),
 
-          // ── Product count ──
+          // ── Product count / state ──
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
-              child: Text(
-                _isLoading ? 'Đang tải...' : '${_products.length} sản phẩm',
-                style: AppTextStyles.caption.copyWith(
-                  color: AppColors.muted,
-                ),
-              ),
+              child: _isLoading
+                  ? const SizedBox.shrink()
+                  : Text(
+                      _error != null
+                          ? 'Lỗi tải dữ liệu'
+                          : '${_products.length} sản phẩm',
+                      style: AppTextStyles.caption.copyWith(color: AppColors.muted),
+                    ),
             ),
           ),
 
-          // ── Product grid ──
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-            sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 0.68,
+          // ── Body ──
+          if (_isLoading)
+            const SliverFillRemaining(
+              child: Center(
+                child: CircularProgressIndicator(),
               ),
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  return AnimatedListItem(
-                    index: index,
-                    child: ProductCard(
-                      product: _products[index],
-                      onTap: () {
-                        Navigator.pushNamed(
-                          context,
-                          AppRouter.productDetail,
-                          arguments: _products[index],
-                        );
-                      },
+            )
+          else if (_error != null)
+            SliverFillRemaining(
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.wifi_off_rounded,
+                        size: 48, color: AppColors.muted),
+                    const SizedBox(height: 12),
+                    Text('Không thể tải sản phẩm',
+                        style: AppTextStyles.subtitle),
+                    const SizedBox(height: 8),
+                    TextButton(
+                      onPressed: _fetchProducts,
+                      child: const Text('Thử lại'),
                     ),
-                  );
-                },
-                childCount: _products.length,
+                  ],
+                ),
+              ),
+            )
+          else if (_products.isEmpty)
+            SliverFillRemaining(
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.inventory_2_outlined,
+                        size: 48, color: AppColors.muted),
+                    const SizedBox(height: 12),
+                    Text('Không có sản phẩm nào',
+                        style: AppTextStyles.subtitle),
+                  ],
+                ),
+              ),
+            )
+          else
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+              sliver: SliverGrid(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 0.68,
+                ),
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    return AnimatedListItem(
+                      index: index,
+                      child: ProductCard(
+                        product: _products[index],
+                        onTap: () {
+                          Navigator.pushNamed(
+                            context,
+                            AppRouter.productDetail,
+                            arguments: _products[index],
+                          );
+                        },
+                      ),
+                    );
+                  },
+                  childCount: _products.length,
+                ),
               ),
             ),
-          ),
         ],
       ),
     );

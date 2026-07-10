@@ -37,7 +37,8 @@ class ApiConstants {
   // ── Storage ───────────────────────────────────────────────────────────────
   static const String storage = '/storage';
 
-  // ── WebSocket (disabled) ──────────────────────────────────────────────────
+  // ── WebSocket ─────────────────────────────────────────────────────────────
   static String get wsUrl => 'http://$_host:5000/notifications';
+  static String get trackingSocketUrl => 'http://$_host:5000';
   static const bool enableNotificationSocket = false;
 }

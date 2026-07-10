@@ -19,6 +19,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   int _quantity = 1;
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final product =
+        ModalRoute.of(context)?.settings.arguments as ProductModel?;
+    final min = product?.minOrderQuantity ?? 1;
+    if (_quantity < min) setState(() => _quantity = min.toInt());
+  }
+
+  @override
   Widget build(BuildContext context) {
     final product =
         ModalRoute.of(context)?.settings.arguments as ProductModel?;
@@ -32,6 +41,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     final province = product?.province ?? '';
     final sellerName = product?.sellerName ?? '';
     final hasImage = product?.images.isNotEmpty == true;
+    final stock = (product?.availableQuantity ?? 0).toInt();
+    final minOrder = (product?.minOrderQuantity ?? 1).toInt();
 
     return Scaffold(
       backgroundColor: AppColors.surfaceElevated,
@@ -118,6 +129,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   .copyWith(color: AppColors.muted)),
                         ],
                       ),
+                      const SizedBox(height: 16),
+                      // ── Tồn kho + min order info ──
+                      _buildStockInfo(stock, minOrder, unit),
                       const SizedBox(height: 24),
                       _divider(),
                       const SizedBox(height: 20),
@@ -125,8 +139,25 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           style: AppTextStyles.subtitle.copyWith(
                               fontWeight: FontWeight.w600,
                               color: AppColors.ink)),
-                      const SizedBox(height: 12),
-                      _buildQtySelector(),
+                      const SizedBox(height: 4),
+                      if (minOrder > 1)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.info_outline,
+                                  size: 14, color: AppColors.warning),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Đặt tối thiểu $minOrder $unit',
+                                style: AppTextStyles.caption.copyWith(
+                                    color: AppColors.warning,
+                                    fontWeight: FontWeight.w600),
+                              ),
+                            ],
+                          ),
+                        ),
+                      _buildQtySelector(minOrder),
                       const SizedBox(height: 24),
                       _divider(),
                       const SizedBox(height: 20),
@@ -187,6 +218,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         height: 48,
                         onPressed: () {
                           if (product != null) {
+                            if (_quantity < minOrder) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                      'Đặt tối thiểu $minOrder $unit, bạn đang chọn $_quantity $unit'),
+                                  backgroundColor: AppColors.warning,
+                                ),
+                              );
+                              return;
+                            }
                             Provider.of<CartProvider>(context, listen: false)
                                 .addItem(product, _quantity);
                           }
@@ -209,7 +250,85 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  Widget _buildQtySelector() {
+  Widget _buildStockInfo(int stock, int minOrder, String unit) {
+    final stockRatio = stock > 0 ? (stock / (stock + 50)).clamp(0.0, 1.0) : 0.0;
+    final isLow = stock > 0 && stock <= 20;
+    final stockColor = stock == 0
+        ? AppColors.error
+        : isLow
+            ? AppColors.warning
+            : AppColors.success;
+    final stockLabel = stock == 0
+        ? 'Hết hàng'
+        : isLow
+            ? 'Sắp hết ($stock $unit)'
+            : 'Còn $stock $unit';
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: stockColor.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: stockColor.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    stock == 0
+                        ? Icons.remove_shopping_cart_outlined
+                        : Icons.inventory_2_outlined,
+                    size: 16,
+                    color: stockColor,
+                  ),
+                  const SizedBox(width: 6),
+                  Text('Tồn kho',
+                      style: AppTextStyles.caption
+                          .copyWith(color: AppColors.muted)),
+                ],
+              ),
+              Text(
+                stockLabel,
+                style: AppTextStyles.caption.copyWith(
+                    color: stockColor, fontWeight: FontWeight.w700),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: stockRatio,
+              minHeight: 6,
+              backgroundColor: AppColors.surfaceSoft,
+              valueColor: AlwaysStoppedAnimation<Color>(stockColor),
+            ),
+          ),
+          if (minOrder > 1) ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Icon(Icons.shopping_basket_outlined,
+                    size: 15, color: AppColors.muted),
+                const SizedBox(width: 6),
+                Text(
+                  'Mua tối thiểu: $minOrder $unit / đơn hàng',
+                  style: AppTextStyles.caption.copyWith(color: AppColors.muted),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQtySelector(int minOrder) {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
@@ -222,7 +341,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           _qtyBtn(Icons.remove_rounded, () {
-            if (_quantity > 1) setState(() => _quantity--);
+            if (_quantity > minOrder) setState(() => _quantity--);
           }),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),

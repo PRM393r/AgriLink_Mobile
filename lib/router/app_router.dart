@@ -17,6 +17,10 @@ import '../screens/marketplace/marketplace_screen.dart';
 import '../screens/marketplace/product_detail_screen.dart';
 import '../screens/profile/edit_profile_screen.dart';
 import '../screens/orders/order_tracking_screen.dart';
+import '../screens/support/faq_screen.dart';
+import '../screens/support/terms_screen.dart';
+import '../screens/support/privacy_screen.dart';
+import '../screens/support/how_to_buy_screen.dart';
 
 class AppRouter {
   const AppRouter._();
@@ -38,6 +42,10 @@ class AppRouter {
   static const String productDetail = '/product-detail';
   static const String editProfile = '/edit-profile';
   static const String orderTracking = '/order-tracking';
+  static const String faq = '/faq';
+  static const String terms = '/terms';
+  static const String privacy = '/privacy';
+  static const String howToBuy = '/how-to-buy';
 
   static Route<dynamic>? onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -83,6 +91,14 @@ class AppRouter {
           ),
           settings: settings,
         );
+      case faq:
+        return SlideRoute(page: const FaqScreen(), settings: settings);
+      case terms:
+        return SlideRoute(page: const TermsScreen(), settings: settings);
+      case privacy:
+        return SlideRoute(page: const PrivacyScreen(), settings: settings);
+      case howToBuy:
+        return SlideRoute(page: const HowToBuyScreen(), settings: settings);
       default:
         return MaterialPageRoute(
           builder: (_) => Scaffold(

@@ -126,6 +126,47 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ),
             const SizedBox(height: 12),
 
+            // ── Banner hướng dẫn cho nông dân ───────────────────
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF0FDF4),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFBBF7D0)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.tips_and_updates_outlined,
+                      color: Color(0xFF16A34A), size: 22),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Lần đầu mua hàng?',
+                          style: TextStyle(
+                              color: Color(0xFF15803D),
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Chọn "Trả tiền khi nhận hàng (COD)" — bạn chỉ trả tiền sau khi đã nhận được hàng. An toàn, không cần chuyển khoản trước.',
+                          style: TextStyle(
+                              color: Color(0xFF166534),
+                              fontSize: 13,
+                              height: 1.5),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+
             // ── Phương thức thanh toán ───────────────────────────
             _SectionCard(
               title: 'Phương thức thanh toán',

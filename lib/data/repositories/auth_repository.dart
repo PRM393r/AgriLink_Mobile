@@ -47,10 +47,7 @@ class AuthRepository {
   // ── POST /auth/resend-otp ────────────────────────────────────────────────
   Future<void> resendOtp(String email) async {
     try {
-      await _apiService.post(
-        ApiConstants.resendOtp,
-        data: {'email': email},
-      );
+      await _apiService.post(ApiConstants.resendOtp, data: {'email': email});
     } on DioException catch (e) {
       throw Exception(e.error ?? 'Gửi lại OTP thất bại');
     } catch (e) {
@@ -72,12 +69,16 @@ class AuthRepository {
       final data = envelope?['data'] as Map<String, dynamic>?;
       if (data == null) throw Exception('Phản hồi không hợp lệ từ máy chủ');
 
-      final accessToken  = data['accessToken']  as String? ?? '';
+      final accessToken = data['accessToken'] as String? ?? '';
       final refreshToken = data['refreshToken'] as String? ?? '';
-      final userJson     = data['user']         as Map<String, dynamic>? ?? {};
+      final userJson = data['user'] as Map<String, dynamic>? ?? {};
 
-      if (accessToken.isNotEmpty)  await TokenStorage.saveToken(accessToken);
-      if (refreshToken.isNotEmpty) await TokenStorage.saveRefreshToken(refreshToken);
+      if (accessToken.isNotEmpty) {
+        await TokenStorage.saveToken(accessToken);
+      }
+      if (refreshToken.isNotEmpty) {
+        await TokenStorage.saveRefreshToken(refreshToken);
+      }
 
       return UserModel.fromJson(userJson);
     } on DioException catch (e) {
@@ -105,16 +106,19 @@ class AuthRepository {
   // ── PATCH /users/me ──────────────────────────────────────────────────────
   Future<UserModel> updateProfile({
     String? fullName,
-    String? email,
     String? avatarUrl,
+    String? address,
   }) async {
     try {
       final body = <String, dynamic>{};
-      if (fullName != null)  body['fullName']  = fullName;
-      if (email != null)     body['email']     = email;
+      if (fullName != null) body['fullName'] = fullName;
       if (avatarUrl != null) body['avatarUrl'] = avatarUrl;
+      if (address != null) body['address'] = address;
 
-      final response = await _apiService.patch(ApiConstants.updateMe, data: body);
+      final response = await _apiService.patch(
+        ApiConstants.updateMe,
+        data: body,
+      );
       final envelope = response.data as Map<String, dynamic>?;
       final data = envelope?['data'] as Map<String, dynamic>?;
       if (data == null) throw Exception('Cập nhật hồ sơ thất bại');
@@ -129,10 +133,7 @@ class AuthRepository {
   // ── PUT /users/me/role ───────────────────────────────────────────────────
   Future<UserModel> updateRole(String role) async {
     try {
-      await _apiService.put(
-        ApiConstants.updateRole,
-        data: {'role': role},
-      );
+      await _apiService.put(ApiConstants.updateRole, data: {'role': role});
       return getMe();
     } on DioException catch (e) {
       throw Exception(e.error ?? 'Cập nhật vai trò thất bại');
@@ -152,10 +153,14 @@ class AuthRepository {
       );
       final envelope = response.data as Map<String, dynamic>?;
       final data = envelope?['data'] as Map<String, dynamic>?;
-      final newAccess  = data?['accessToken']  as String? ?? '';
+      final newAccess = data?['accessToken'] as String? ?? '';
       final newRefresh = data?['refreshToken'] as String? ?? '';
-      if (newAccess.isNotEmpty)  await TokenStorage.saveToken(newAccess);
-      if (newRefresh.isNotEmpty) await TokenStorage.saveRefreshToken(newRefresh);
+      if (newAccess.isNotEmpty) {
+        await TokenStorage.saveToken(newAccess);
+      }
+      if (newRefresh.isNotEmpty) {
+        await TokenStorage.saveRefreshToken(newRefresh);
+      }
       return newAccess;
     } on DioException catch (e) {
       throw Exception(e.error ?? 'Làm mới token thất bại');

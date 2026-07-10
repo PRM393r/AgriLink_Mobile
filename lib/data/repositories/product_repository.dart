@@ -13,6 +13,7 @@ class ProductRepository {
     String? category,
     String? search,
     String? farmingType,
+    String? sellerId,
     int? limit,
     String? sortBy,
     String? order,
@@ -22,6 +23,7 @@ class ProductRepository {
       if (category != null && category.isNotEmpty) queryParams['categoryId'] = category;
       if (search != null && search.isNotEmpty) queryParams['search'] = search;
       if (farmingType != null && farmingType.isNotEmpty) queryParams['farmingType'] = farmingType;
+      if (sellerId != null && sellerId.isNotEmpty) queryParams['sellerId'] = sellerId;
       if (limit != null) queryParams['limit'] = limit;
       if (sortBy != null) queryParams['sortBy'] = sortBy;
       if (order != null) queryParams['order'] = order;

@@ -37,10 +37,10 @@ class OrderModel {
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {
     return OrderModel(
-      id: json['id'] as String? ?? '',
+      id: (json['_id'] ?? json['id'])?.toString() ?? '',
       orderCode: json['orderCode'] as String? ?? '',
-      buyerId: json['buyerId'] as String? ?? '',
-      sellerId: json['sellerId'] as String? ?? '',
+      buyerId: (json['buyerId'] is Map ? json['buyerId']['_id'] : json['buyerId'])?.toString() ?? '',
+      sellerId: (json['sellerId'] is Map ? json['sellerId']['_id'] : json['sellerId'])?.toString() ?? '',
       status: json['status'] as String? ?? 'pending',
       subtotal: (json['subtotal'] as num?)?.toDouble() ?? 0.0,
       shippingFee: (json['shippingFee'] as num?)?.toDouble() ?? 0.0,
@@ -103,6 +103,10 @@ class OrderItemModel {
   String get productName => productSnapshot['name'] as String? ?? 'Sản phẩm';
   String get productUnit => productSnapshot['unit'] as String? ?? '';
   String? get productImageUrl {
+    // Backend productSnapshot stores imageUrl as string
+    final url = productSnapshot['imageUrl'];
+    if (url is String && url.isNotEmpty) return url;
+    // Fallback: images array format
     final imgs = productSnapshot['images'];
     if (imgs is List && imgs.isNotEmpty) {
       final first = imgs.first;
@@ -113,8 +117,8 @@ class OrderItemModel {
 
   factory OrderItemModel.fromJson(Map<String, dynamic> json) {
     return OrderItemModel(
-      id: json['id'] as String? ?? '',
-      productId: json['productId'] as String?,
+      id: (json['_id'] ?? json['id'])?.toString() ?? '',
+      productId: (json['productId'] is Map ? json['productId']['_id'] : json['productId'])?.toString(),
       productSnapshot: json['productSnapshot'] as Map<String, dynamic>? ?? {},
       quantity: (json['quantity'] as num?)?.toDouble() ?? 1.0,
       unitPrice: (json['unitPrice'] as num?)?.toDouble() ?? 0.0,

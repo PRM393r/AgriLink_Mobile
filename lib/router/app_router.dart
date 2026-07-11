@@ -28,6 +28,9 @@ import '../screens/wishlist/wishlist_screen.dart';
 import '../screens/reviews/review_form_screen.dart';
 import '../screens/notifications/notifications_screen.dart';
 import '../screens/prices/prices_screen.dart';
+import '../screens/trace/trace_screen.dart';
+import '../screens/trace/qr_scanner_screen.dart';
+import '../screens/trace/trace_detail_screen.dart';
 
 class AppRouter {
   const AppRouter._();
@@ -59,6 +62,9 @@ class AppRouter {
   static const String reviewForm = '/review-form';
   static const String notifications = '/notifications';
   static const String marketPrices = '/market-prices';
+  static const String trace = '/trace';
+  static const String qrScanner = '/trace/scanner';
+  static const String traceDetail = '/trace/detail';
 
   static Route<dynamic>? onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -124,6 +130,12 @@ class AppRouter {
         return SlideRoute(page: const NotificationsScreen(), settings: settings);
       case marketPrices:
         return SlideRoute(page: const PricesScreen(), settings: settings);
+      case trace:
+        return SlideRoute(page: const TraceScreen(), settings: settings);
+      case qrScanner:
+        return SlideUpRoute(page: const QrScannerScreen(), settings: settings);
+      case traceDetail:
+        return SlideRoute(page: const TraceDetailScreen(), settings: settings);
       default:
         return MaterialPageRoute(
           builder: (_) => Scaffold(

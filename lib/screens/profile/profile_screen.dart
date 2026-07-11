@@ -273,6 +273,12 @@ class ProfileScreen extends StatelessWidget {
                   onTap: () =>
                       Navigator.pushNamed(context, AppRouter.marketPrices),
                 ),
+                _MenuItem(
+                  Icons.qr_code_scanner_rounded,
+                  'Truy xuất nguồn gốc',
+                  AppColors.info,
+                  onTap: () => Navigator.pushNamed(context, AppRouter.trace),
+                ),
                 _MenuItem(Icons.favorite_outline, 'Yêu thích', AppColors.error),
               ]),
             ),

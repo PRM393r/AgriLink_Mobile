@@ -35,6 +35,7 @@ class ApiConstants {
   static const String notificationsReadAll = '/notifications/read-all';
 
   static const String marketPrices = '/market-prices';
+  static const String trace = '/trace';
 
   // ── Storage ───────────────────────────────────────────────────────────────
   static const String storage = '/storage';

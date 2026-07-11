@@ -26,6 +26,7 @@ import '../screens/dashboard/farmer/my_products_screen.dart';
 import '../screens/dashboard/farmer/product_form_screen.dart';
 import '../screens/wishlist/wishlist_screen.dart';
 import '../screens/reviews/review_form_screen.dart';
+import '../screens/notifications/notifications_screen.dart';
 
 class AppRouter {
   const AppRouter._();
@@ -55,6 +56,7 @@ class AppRouter {
   static const String privacy = '/privacy';
   static const String howToBuy = '/how-to-buy';
   static const String reviewForm = '/review-form';
+  static const String notifications = '/notifications';
 
   static Route<dynamic>? onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -116,6 +118,8 @@ class AppRouter {
         return SlideRoute(page: const HowToBuyScreen(), settings: settings);
       case reviewForm:
         return SlideUpRoute(page: const ReviewFormScreen(), settings: settings);
+      case notifications:
+        return SlideRoute(page: const NotificationsScreen(), settings: settings);
       default:
         return MaterialPageRoute(
           builder: (_) => Scaffold(

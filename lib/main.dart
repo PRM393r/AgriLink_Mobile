@@ -15,6 +15,8 @@ import 'data/providers/wishlist_provider.dart';
 import 'data/repositories/order_repository.dart';
 import 'data/services/order_service.dart';
 import 'data/services/review_service.dart';
+import 'data/services/notification_service.dart';
+import 'data/providers/notification_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,6 +27,13 @@ void main() async {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => CartProvider()),
         Provider<ApiService>(create: (_) => ApiService()),
+        ProxyProvider<ApiService, NotificationService>(
+          update: (_, api, __) => NotificationService(api),
+        ),
+        ChangeNotifierProxyProvider<NotificationService, NotificationProvider>(
+          create: (context) => NotificationProvider(context.read<NotificationService>()),
+          update: (_, service, provider) => provider ?? NotificationProvider(service),
+        ),
         ProxyProvider<ApiService, ProductRepository>(
           update: (_, api, __) => ProductRepository(api),
         ),

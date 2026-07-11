@@ -19,13 +19,25 @@ class NotificationModel {
 
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
     return NotificationModel(
-      id: json['id'] as String? ?? '',
+      id: (json['id'] ?? json['_id'])?.toString() ?? '',
       type: json['type'] as String? ?? 'info',
       title: json['title'] as String? ?? '',
       body: json['body'] as String? ?? '',
       data: json['data'] as Map<String, dynamic>? ?? const {},
       isRead: json['isRead'] as bool? ?? false,
       createdAt: json['createdAt'] != null ? DateTime.tryParse(json['createdAt'] as String) : null,
+    );
+  }
+
+  NotificationModel copyWith({bool? isRead}) {
+    return NotificationModel(
+      id: id,
+      type: type,
+      title: title,
+      body: body,
+      data: data,
+      isRead: isRead ?? this.isRead,
+      createdAt: createdAt,
     );
   }
 

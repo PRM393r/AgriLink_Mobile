@@ -17,6 +17,8 @@ import 'data/services/order_service.dart';
 import 'data/services/review_service.dart';
 import 'data/services/notification_service.dart';
 import 'data/providers/notification_provider.dart';
+import 'data/services/market_price_service.dart';
+import 'data/providers/market_price_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,6 +35,13 @@ void main() async {
         ChangeNotifierProxyProvider<NotificationService, NotificationProvider>(
           create: (context) => NotificationProvider(context.read<NotificationService>()),
           update: (_, service, provider) => provider ?? NotificationProvider(service),
+        ),
+        ProxyProvider<ApiService, MarketPriceService>(
+          update: (_, api, __) => MarketPriceService(api),
+        ),
+        ChangeNotifierProxyProvider<MarketPriceService, MarketPriceProvider>(
+          create: (context) => MarketPriceProvider(context.read<MarketPriceService>()),
+          update: (_, service, provider) => provider ?? MarketPriceProvider(service),
         ),
         ProxyProvider<ApiService, ProductRepository>(
           update: (_, api, __) => ProductRepository(api),

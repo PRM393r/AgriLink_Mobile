@@ -282,6 +282,7 @@ class AuthProvider extends ChangeNotifier {
     String? fullName,
     String? avatarUrl,
     String? address,
+    Map<String, dynamic>? bankInfo,
     required VoidCallback onSuccess,
     required Function(String) onError,
   }) async {
@@ -292,6 +293,9 @@ class AuthProvider extends ChangeNotifier {
         fullName: fullName ?? _currentUser?.fullName,
         avatarUrl: avatarUrl ?? _currentUser?.avatarUrl,
         address: address ?? _currentUser?.address,
+        bankInfo: bankInfo != null
+            ? BankInfoModel.fromJson(bankInfo)
+            : _currentUser?.bankInfo,
       );
       _setLoading(false);
       onSuccess();
@@ -303,6 +307,7 @@ class AuthProvider extends ChangeNotifier {
         fullName: fullName,
         avatarUrl: avatarUrl,
         address: address,
+        bankInfo: bankInfo,
       );
       _currentUser = updatedUser;
       _setLoading(false);

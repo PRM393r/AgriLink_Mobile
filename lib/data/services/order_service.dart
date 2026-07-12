@@ -6,7 +6,7 @@ class OrderService {
 
   OrderService(this._orderRepository);
 
-  Future<OrderModel> createOrder(CreateOrderRequest request) {
+  Future<List<OrderModel>> createOrder(CreateOrderRequest request) {
     return _orderRepository.createOrder(request);
   }
 

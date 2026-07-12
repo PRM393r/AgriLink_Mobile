@@ -108,12 +108,14 @@ class AuthRepository {
     String? fullName,
     String? avatarUrl,
     String? address,
+    Map<String, dynamic>? bankInfo,
   }) async {
     try {
       final body = <String, dynamic>{};
       if (fullName != null) body['fullName'] = fullName;
       if (avatarUrl != null) body['avatarUrl'] = avatarUrl;
       if (address != null) body['address'] = address;
+      if (bankInfo != null) body['bankInfo'] = bankInfo;
 
       final response = await _apiService.patch(
         ApiConstants.updateMe,

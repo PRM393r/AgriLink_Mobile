@@ -8,6 +8,8 @@ import '../../data/models/order_model.dart';
 import '../../data/repositories/order_repository.dart';
 import '../../data/services/api_service.dart';
 import '../../widgets/common/agri_button.dart';
+import '../../data/providers/notification_provider.dart';
+import '../../router/app_router.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
@@ -187,13 +189,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     icon: Icons.account_balance_outlined,
                     onChanged: (v) => setState(() => _paymentMethod = v!),
                   ),
-                  _PaymentOption(
-                    value: 'vnpay',
-                    groupValue: _paymentMethod,
-                    label: 'VNPay',
-                    icon: Icons.credit_card_outlined,
-                    onChanged: (v) => setState(() => _paymentMethod = v!),
-                  ),
                 ],
               ),
             ),
@@ -300,14 +295,27 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         note: _noteController.text.trim().isEmpty ? null : _noteController.text.trim(),
         paymentMethod: _paymentMethod,
       );
-      await repo.createOrder(request);
+      final orders = await repo.createOrder(request);
       cart.clearCart();
-      if (mounted) Navigator.pushReplacementNamed(context, '/order-success');
-    } catch (e) {
+      if (!mounted) return;
+      await context.read<NotificationProvider>().refresh();
+      if (!mounted) return;
+      if (_paymentMethod == 'cod') {
+        Navigator.pushReplacementNamed(context, AppRouter.orderSuccess);
+      } else {
+        Navigator.pushReplacementNamed(
+          context,
+          AppRouter.paymentQr,
+          arguments: orders,
+        );
+      }
+    } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.toString().replaceAll('Exception: ', '')),
+            content: Text(
+              error.toString().replaceFirst('Exception:', '').trim(),
+            ),
             backgroundColor: AppColors.error,
           ),
         );

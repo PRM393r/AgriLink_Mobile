@@ -11,7 +11,7 @@ import '../../../router/app_router.dart';
 import '../../../widgets/common/agri_button.dart';
 import '../../../widgets/common/stat_card.dart';
 import '../../../widgets/common/animated_list_item.dart';
-import '../farmer/product_form_screen.dart';
+import '../../../widgets/notification/notification_badge.dart';
 
 class SupplierDashboardScreen extends StatefulWidget {
   const SupplierDashboardScreen({super.key});
@@ -118,6 +118,15 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
                             ],
                           ),
                         ),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const NotificationBadge(
+                            iconColor: Colors.white,
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 20),
@@ -149,10 +158,8 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
                         icon: Icons.add_rounded,
                         height: 44,
                         onPressed: () async {
-                          final added = await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => const ProductFormScreen()));
+                          final added = await Navigator.pushNamed(
+                              context, AppRouter.productForm);
                           if (added == true) _fetchMyProducts();
                         },
                       ),

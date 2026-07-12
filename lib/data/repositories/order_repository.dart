@@ -9,6 +9,7 @@ class OrderRepository {
   OrderRepository(this._apiService);
 
   // Backend gộp items theo sellerId; giỏ hàng nhiều seller → nhiều order được tạo.
+  // Response: order đơn lẻ khi 1 seller, { orders: [...] } khi nhiều seller.
   Future<List<OrderModel>> createOrder(CreateOrderRequest request) async {
     try {
       final response = await _apiService.post(
@@ -16,14 +17,15 @@ class OrderRepository {
         data: request.toJson(),
       );
       final data = response.data;
-      if (data is Map<String, dynamic> && data['data'] != null) {
-        final inner = data['data'];
-        if (inner is List) {
-          return inner
-              .map((e) => OrderModel.fromJson(e as Map<String, dynamic>))
+      if (data is Map<String, dynamic> && data['data'] is Map) {
+        final payload = Map<String, dynamic>.from(data['data'] as Map);
+        if (payload['orders'] is List) {
+          return (payload['orders'] as List)
+              .whereType<Map>()
+              .map((item) => OrderModel.fromJson(Map<String, dynamic>.from(item)))
               .toList();
         }
-        return [OrderModel.fromJson(inner as Map<String, dynamic>)];
+        return [OrderModel.fromJson(payload)];
       }
       throw Exception('Tạo đơn hàng thất bại');
     } on DioException catch (e) {
@@ -90,6 +92,21 @@ class OrderRepository {
       throw Exception('Cập nhật trạng thái thất bại');
     } on DioException catch (e) {
       throw Exception(e.error ?? 'Cập nhật thất bại');
+    }
+  }
+
+  Future<OrderModel> confirmPayment(String id) async {
+    try {
+      final response = await _apiService.patch(
+        '${ApiConstants.orders}/$id/payment-confirm',
+      );
+      final data = response.data;
+      if (data is Map<String, dynamic> && data['data'] is Map<String, dynamic>) {
+        return OrderModel.fromJson(data['data'] as Map<String, dynamic>);
+      }
+      throw Exception('Xác nhận thanh toán thất bại');
+    } on DioException catch (e) {
+      throw Exception(e.error ?? 'Xác nhận thanh toán thất bại');
     }
   }
 

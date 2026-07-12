@@ -15,6 +15,7 @@ import '../orders/order_history_screen.dart';
 import '../orders/seller_order_screen.dart';
 import '../profile/profile_screen.dart';
 import '../dashboard/farmer/my_products_screen.dart';
+import '../../data/providers/notification_provider.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -34,6 +35,9 @@ class _HomeScreenState extends State<HomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         context.read<WishlistProvider>().fetchWishlistIds();
+        final notifications = context.read<NotificationProvider>();
+        notifications.reset();
+        notifications.fetchNotifications(force: true);
       }
     });
   }
@@ -136,7 +140,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       body: PageView(
         controller: _pageController,
-        physics: const NeverScrollableScrollPhysics(), // Disable swipe if we only want tap navigation
+        physics: const NeverScrollableScrollPhysics(),
         children: screens,
       ),
       bottomNavigationBar: _buildCustomBottomNav(navItems),

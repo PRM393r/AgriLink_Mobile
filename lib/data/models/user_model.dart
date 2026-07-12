@@ -1,3 +1,30 @@
+class BankInfoModel {
+  final String bankCode;
+  final String accountNumber;
+  final String accountName;
+
+  const BankInfoModel({
+    this.bankCode = '',
+    this.accountNumber = '',
+    this.accountName = '',
+  });
+
+  bool get isComplete =>
+      bankCode.isNotEmpty && accountNumber.isNotEmpty && accountName.isNotEmpty;
+
+  factory BankInfoModel.fromJson(Map<String, dynamic>? json) => BankInfoModel(
+        bankCode: json?['bankCode'] as String? ?? '',
+        accountNumber: json?['accountNumber'] as String? ?? '',
+        accountName: json?['accountName'] as String? ?? '',
+      );
+
+  Map<String, dynamic> toJson() => {
+        'bankCode': bankCode,
+        'accountNumber': accountNumber,
+        'accountName': accountName,
+      };
+}
+
 class UserModel {
   final String id;
   final String fullName;
@@ -7,6 +34,7 @@ class UserModel {
   final String? avatarUrl;
   final String? address;
   final bool isVerified;
+  final BankInfoModel bankInfo;
 
   const UserModel({
     required this.id,
@@ -17,6 +45,7 @@ class UserModel {
     this.avatarUrl,
     this.address,
     this.isVerified = false,
+    this.bankInfo = const BankInfoModel(),
   });
 
   bool get isFarmer   => role == 'farmer';
@@ -36,6 +65,11 @@ class UserModel {
       avatarUrl:  json['avatarUrl'] as String?,
       address:    json['address']   as String?,
       isVerified: json['isVerified'] as bool? ?? false,
+      bankInfo: BankInfoModel.fromJson(
+        json['bankInfo'] is Map
+            ? Map<String, dynamic>.from(json['bankInfo'] as Map)
+            : null,
+      ),
     );
   }
 
@@ -48,6 +82,7 @@ class UserModel {
     'avatarUrl':  avatarUrl,
     'address':    address,
     'isVerified': isVerified,
+    'bankInfo': bankInfo.toJson(),
   };
 
   UserModel copyWith({
@@ -59,6 +94,7 @@ class UserModel {
     String?  avatarUrl,
     String?  address,
     bool?    isVerified,
+    BankInfoModel? bankInfo,
   }) => UserModel(
     id:         id         ?? this.id,
     fullName:   fullName   ?? this.fullName,
@@ -68,5 +104,6 @@ class UserModel {
     avatarUrl:  avatarUrl  ?? this.avatarUrl,
     address:    address    ?? this.address,
     isVerified: isVerified ?? this.isVerified,
+    bankInfo: bankInfo ?? this.bankInfo,
   );
 }

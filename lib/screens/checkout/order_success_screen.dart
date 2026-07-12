@@ -93,7 +93,7 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
                         Navigator.pushNamedAndRemoveUntil(
                           context,
                           AppRouter.orderHistory,
-                          (route) => false,
+                          (route) => route.settings.name == AppRouter.home,
                         );
                       },
                     ),

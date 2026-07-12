@@ -6,7 +6,9 @@ import '../../data/providers/notification_provider.dart';
 import '../../router/app_router.dart';
 
 class NotificationBadge extends StatelessWidget {
-  const NotificationBadge({super.key});
+  const NotificationBadge({super.key, this.iconColor = AppColors.primary});
+
+  final Color iconColor;
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +22,7 @@ class NotificationBadge extends StatelessWidget {
       icon: Stack(
         clipBehavior: Clip.none,
         children: [
-          const Icon(Icons.notifications_outlined, color: AppColors.primary),
+          Icon(Icons.notifications_outlined, color: iconColor),
           if (count > 0)
             Positioned(
               top: -7,

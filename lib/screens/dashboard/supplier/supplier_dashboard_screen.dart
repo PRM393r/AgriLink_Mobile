@@ -11,6 +11,7 @@ import '../../../router/app_router.dart';
 import '../../../widgets/common/agri_button.dart';
 import '../../../widgets/common/stat_card.dart';
 import '../../../widgets/common/animated_list_item.dart';
+import '../../../widgets/notification/notification_badge.dart';
 
 class SupplierDashboardScreen extends StatefulWidget {
   const SupplierDashboardScreen({super.key});
@@ -115,6 +116,15 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis),
                             ],
+                          ),
+                        ),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const NotificationBadge(
+                            iconColor: Colors.white,
                           ),
                         ),
                       ],

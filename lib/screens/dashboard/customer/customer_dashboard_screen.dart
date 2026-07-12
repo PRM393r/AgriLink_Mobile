@@ -11,6 +11,7 @@ import '../../../data/services/auth_provider.dart';
 import '../../../widgets/product/product_card.dart';
 import '../../../widgets/common/animated_list_item.dart';
 import '../../../router/app_router.dart';
+import '../../../widgets/notification/notification_badge.dart';
 
 class CustomerDashboardScreen extends StatefulWidget {
   const CustomerDashboardScreen({super.key});
@@ -191,6 +192,16 @@ class _CustomerDashboardScreenState extends State<CustomerDashboardScreen> {
                                   // Action buttons
                                   Row(
                                     children: [
+                                      Container(
+                                        decoration: BoxDecoration(
+                                          color: AppColors.canvas.withValues(alpha: 0.15),
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: const NotificationBadge(
+                                          iconColor: AppColors.canvas,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
                                       GestureDetector(
                                         onTap: () =>
                                             Navigator.pushNamed(context, AppRouter.wishlist),

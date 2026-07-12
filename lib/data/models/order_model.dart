@@ -22,6 +22,7 @@ class OrderModel {
   final double totalAmount;
   final String? paymentMethod;
   final String paymentStatus;
+  final Map<String, dynamic>? paymentRecipient;
   final String? note;
   final String? cancelledReason;
   final String? cancelReason;
@@ -42,6 +43,7 @@ class OrderModel {
     required this.totalAmount,
     this.paymentMethod,
     required this.paymentStatus,
+    this.paymentRecipient,
     this.note,
     this.cancelledReason,
     this.cancelReason,
@@ -64,6 +66,9 @@ class OrderModel {
       totalAmount: (json['totalAmount'] as num?)?.toDouble() ?? 0.0,
       paymentMethod: json['paymentMethod'] as String?,
       paymentStatus: json['paymentStatus'] as String? ?? 'unpaid',
+      paymentRecipient: json['paymentRecipient'] is Map
+          ? Map<String, dynamic>.from(json['paymentRecipient'] as Map)
+          : null,
       note: json['note'] as String?,
       cancelledReason: json['cancelledReason'] as String?,
       cancelReason: json['cancelReason'] as String?,

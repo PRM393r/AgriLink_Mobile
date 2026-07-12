@@ -4,6 +4,8 @@ import '../../core/constants/app_text_styles.dart';
 import '../../data/models/order_model.dart';
 import '../../data/repositories/order_repository.dart';
 import '../../data/services/api_service.dart';
+import '../../data/services/auth_provider.dart';
+import 'package:provider/provider.dart';
 
 class OrderDetailScreen extends StatefulWidget {
   const OrderDetailScreen({super.key});
@@ -40,6 +42,30 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     }
   }
 
+  Future<void> _updateStatus(String status) async {
+    final order = _order;
+    if (order == null) return;
+    try {
+      final updated = await OrderRepository(ApiService()).updateOrderStatus(
+        order.id,
+        status,
+        cancelReason: status == 'cancelled' ? 'Người bán từ chối đơn hàng' : null,
+      );
+      if (mounted) {
+        setState(() => _order = updated);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Cập nhật đơn hàng thành công')),
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error.toString().replaceFirst('Exception:', '').trim())),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -62,6 +88,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   Widget _buildContent(OrderModel order) {
+    final user = context.read<AuthProvider>().currentUser;
+    final isSeller = user != null &&
+        (user.isFarmer || user.isSupplier) &&
+        user.id == order.sellerId;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -135,6 +165,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               icon: Icons.note_outlined,
               child: Text(order.note!, style: AppTextStyles.body.copyWith(fontSize: 14)),
             ),
+          ],
+          if (isSeller) ...[
+            const SizedBox(height: 16),
+            _SellerActions(order: order, onUpdate: _updateStatus),
           ],
           const SizedBox(height: 32),
         ],
@@ -235,6 +269,62 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
         (m) => '${m[1]}.',
       );
+}
+
+class _SellerActions extends StatelessWidget {
+  const _SellerActions({required this.order, required this.onUpdate});
+
+  final OrderModel order;
+  final ValueChanged<String> onUpdate;
+
+  @override
+  Widget build(BuildContext context) {
+    if (order.status == 'delivered' || order.status == 'cancelled') {
+      return const SizedBox.shrink();
+    }
+
+    final nextStatus = switch (order.status) {
+      'pending' => 'confirmed',
+      'confirmed' => 'preparing',
+      'preparing' => 'shipping',
+      'shipping' => 'delivered',
+      _ => null,
+    };
+    final label = switch (nextStatus) {
+      'confirmed' => 'Xác nhận đơn hàng',
+      'preparing' => 'Bắt đầu chuẩn bị hàng',
+      'shipping' => 'Bắt đầu giao hàng',
+      'delivered' => 'Xác nhận đã giao hàng',
+      _ => '',
+    };
+
+    return Column(children: [
+      if (nextStatus != null)
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: () => onUpdate(nextStatus),
+            icon: const Icon(Icons.check_circle_outline_rounded),
+            label: Text(label),
+          ),
+        ),
+      if (order.status == 'pending') ...[
+        const SizedBox(height: 8),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: () => onUpdate('cancelled'),
+            icon: const Icon(Icons.cancel_outlined),
+            label: const Text('Từ chối đơn hàng'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.error,
+              side: const BorderSide(color: AppColors.error),
+            ),
+          ),
+        ),
+      ],
+    ]);
+  }
 }
 
 // ── Sub-widgets ───────────────────────────────────────────────────────────────

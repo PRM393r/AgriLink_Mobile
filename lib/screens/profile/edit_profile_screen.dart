@@ -22,9 +22,24 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final _emailController = TextEditingController();
   final _avatarUrlController = TextEditingController();
   final _addressController = TextEditingController();
+  final _bankAccountController = TextEditingController();
+  final _bankAccountNameController = TextEditingController();
   final _imagePicker = ImagePicker();
 
   bool _isUploadingAvatar = false;
+  String? _bankCode;
+
+  static const _banks = <String, String>{
+    'MB': 'MB Bank',
+    'VCB': 'Vietcombank',
+    'BIDV': 'BIDV',
+    'ICB': 'VietinBank',
+    'TCB': 'Techcombank',
+    'ACB': 'ACB',
+    'VPB': 'VPBank',
+    'TPB': 'TPBank',
+    'VBA': 'Agribank',
+  };
 
   @override
   void initState() {
@@ -34,6 +49,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _emailController.text = user?.email ?? '';
     _avatarUrlController.text = user?.avatarUrl ?? '';
     _addressController.text = user?.address ?? '';
+    _bankCode = user?.bankInfo.bankCode.isNotEmpty == true
+        ? user!.bankInfo.bankCode
+        : null;
+    _bankAccountController.text = user?.bankInfo.accountNumber ?? '';
+    _bankAccountNameController.text = user?.bankInfo.accountName ?? '';
   }
 
   @override
@@ -42,6 +62,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _emailController.dispose();
     _avatarUrlController.dispose();
     _addressController.dispose();
+    _bankAccountController.dispose();
+    _bankAccountNameController.dispose();
     super.dispose();
   }
 
@@ -106,6 +128,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final isSeller = authProvider.currentUser?.isFarmer == true ||
+        authProvider.currentUser?.isSupplier == true;
     authProvider.updateProfile(
       fullName: _fullNameController.text.trim(),
       avatarUrl: _avatarUrlController.text.trim().isEmpty
@@ -114,6 +138,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       address: _addressController.text.trim().isEmpty
           ? null
           : _addressController.text.trim(),
+      bankInfo: isSeller
+          ? {
+              'bankCode': _bankCode ?? '',
+              'accountNumber': _bankAccountController.text.trim(),
+              'accountName': _bankAccountNameController.text.trim().toUpperCase(),
+            }
+          : null,
       onSuccess: () {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Cập nhật hồ sơ thành công!')),
@@ -131,6 +162,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
+    final isSeller = authProvider.currentUser?.isFarmer == true ||
+        authProvider.currentUser?.isSupplier == true;
     final avatarUrl = _avatarUrlController.text.trim();
     final avatarUri = Uri.tryParse(avatarUrl);
     final canPreviewAvatar =
@@ -255,6 +288,69 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     color: AppColors.muted,
                   ),
                 ),
+                if (isSeller) ...[
+                  const SizedBox(height: 28),
+                  Text(
+                    'Thông tin nhận chuyển khoản',
+                    style: AppTextStyles.sectionTitle.copyWith(fontSize: 20),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Thông tin này được dùng để tạo VietQR khi khách thanh toán đơn hàng của bạn.',
+                    style: AppTextStyles.caption.copyWith(color: AppColors.muted),
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    initialValue: _bankCode,
+                    decoration: const InputDecoration(
+                      labelText: 'Ngân hàng',
+                      prefixIcon: Icon(Icons.account_balance_outlined),
+                    ),
+                    items: _banks.entries
+                        .map((entry) => DropdownMenuItem(
+                              value: entry.key,
+                              child: Text(entry.value),
+                            ))
+                        .toList(),
+                    onChanged: (value) => setState(() => _bankCode = value),
+                    validator: (value) {
+                      final hasAny = _bankAccountController.text.trim().isNotEmpty ||
+                          _bankAccountNameController.text.trim().isNotEmpty;
+                      if (hasAny && value == null) return 'Vui lòng chọn ngân hàng';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  AgriTextField(
+                    controller: _bankAccountController,
+                    hintText: 'Số tài khoản',
+                    keyboardType: TextInputType.number,
+                    prefixIcon: const Icon(Icons.numbers_rounded, color: AppColors.muted),
+                    validator: (value) {
+                      final text = value?.trim() ?? '';
+                      final hasAny = _bankCode != null ||
+                          _bankAccountNameController.text.trim().isNotEmpty;
+                      if (!hasAny && text.isEmpty) return null;
+                      if (!RegExp(r'^\d{6,20}$').hasMatch(text)) {
+                        return 'Số tài khoản phải gồm 6-20 chữ số';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  AgriTextField(
+                    controller: _bankAccountNameController,
+                    hintText: 'Tên chủ tài khoản',
+                    prefixIcon: const Icon(Icons.badge_outlined, color: AppColors.muted),
+                    validator: (value) {
+                      final text = value?.trim() ?? '';
+                      final hasAny = _bankCode != null ||
+                          _bankAccountController.text.trim().isNotEmpty;
+                      if (hasAny && text.isEmpty) return 'Vui lòng nhập tên chủ tài khoản';
+                      return null;
+                    },
+                  ),
+                ],
                 const SizedBox(height: 32),
                 AgriButton(
                   text: 'Lưu thay đổi',

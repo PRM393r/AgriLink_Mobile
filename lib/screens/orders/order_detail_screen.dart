@@ -15,6 +15,7 @@ class OrderDetailScreen extends StatefulWidget {
 class _OrderDetailScreenState extends State<OrderDetailScreen> {
   OrderModel? _order;
   bool _isLoading = true;
+  bool _isCancelling = false;
 
   @override
   void didChangeDependencies() {
@@ -40,13 +41,67 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     }
   }
 
+  Future<void> _cancelOrder() async {
+    final order = _order;
+    if (order == null) return;
+
+    final controller = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Hủy đơn hàng'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+              hintText: 'Lý do hủy (tuỳ chọn)...', border: OutlineInputBorder()),
+          maxLines: 3,
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Thoát')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Xác nhận hủy', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _isCancelling = true);
+    try {
+      final updated = await OrderRepository(ApiService())
+          .updateOrderStatus(order.id, 'cancelled', cancelReason: controller.text.trim());
+      if (mounted) {
+        setState(() => _order = updated);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Đã hủy đơn hàng')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceAll('Exception: ', '')),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isCancelling = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final order = _order;
     return Scaffold(
       backgroundColor: AppColors.surfaceSoft,
       appBar: AppBar(
         title: Text(
-          _order != null ? '#${_order!.orderCode}' : 'Chi tiết đơn hàng',
+          order != null ? '#${order.orderCode}' : 'Chi tiết đơn hàng',
           style: const TextStyle(color: AppColors.ink, fontWeight: FontWeight.bold, fontSize: 18),
         ),
         backgroundColor: Colors.white,
@@ -55,9 +110,32 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
-          : _order == null
+          : order == null
               ? const Center(child: Text('Không tìm thấy đơn hàng'))
-              : _buildContent(_order!),
+              : _buildContent(order),
+      bottomNavigationBar: (order != null && order.isPending)
+          ? SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                child: OutlinedButton(
+                  onPressed: _isCancelling ? null : _cancelOrder,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.error,
+                    side: const BorderSide(color: AppColors.error),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                  ),
+                  child: _isCancelling
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Text('Hủy đơn hàng'),
+                ),
+              ),
+            )
+          : null,
     );
   }
 
@@ -67,7 +145,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       child: Column(
         children: [
           // Status timeline
-          _buildStatusTimeline(order),
+          if (order.isCancelled)
+            _buildCancelledBanner(order)
+          else
+            _buildStatusTimeline(order),
           const SizedBox(height: 12),
 
           // Sản phẩm
@@ -200,6 +281,40 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             ],
           );
         }),
+      ),
+    );
+  }
+
+  Widget _buildCancelledBanner(OrderModel order) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8D7DA),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.cancel_outlined, color: AppColors.error, size: 22),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Đơn hàng đã bị hủy',
+                    style: AppTextStyles.body.copyWith(
+                        fontWeight: FontWeight.bold, color: AppColors.error)),
+                if (order.cancelReason != null && order.cancelReason!.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(order.cancelReason!,
+                      style: AppTextStyles.caption.copyWith(color: AppColors.error)),
+                ],
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

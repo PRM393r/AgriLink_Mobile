@@ -8,7 +8,8 @@ class OrderRepository {
 
   OrderRepository(this._apiService);
 
-  Future<OrderModel> createOrder(CreateOrderRequest request) async {
+  // Backend gộp items theo sellerId; giỏ hàng nhiều seller → nhiều order được tạo.
+  Future<List<OrderModel>> createOrder(CreateOrderRequest request) async {
     try {
       final response = await _apiService.post(
         ApiConstants.orders,
@@ -16,7 +17,13 @@ class OrderRepository {
       );
       final data = response.data;
       if (data is Map<String, dynamic> && data['data'] != null) {
-        return OrderModel.fromJson(data['data'] as Map<String, dynamic>);
+        final inner = data['data'];
+        if (inner is List) {
+          return inner
+              .map((e) => OrderModel.fromJson(e as Map<String, dynamic>))
+              .toList();
+        }
+        return [OrderModel.fromJson(inner as Map<String, dynamic>)];
       }
       throw Exception('Tạo đơn hàng thất bại');
     } on DioException catch (e) {

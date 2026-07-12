@@ -303,10 +303,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       await repo.createOrder(request);
       cart.clearCart();
       if (mounted) Navigator.pushReplacementNamed(context, '/order-success');
-    } catch (_) {
-      // BE chưa có endpoint /orders → vẫn cho qua để demo flow
-      cart.clearCart();
-      if (mounted) Navigator.pushReplacementNamed(context, '/order-success');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceAll('Exception: ', '')),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isPlacing = false);
     }

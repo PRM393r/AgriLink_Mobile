@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:socket_io_client/socket_io_client.dart' as sio;
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
+
+// Mock shipper — backend chưa có bảng shipper thật, giả lập để hiện UI liên hệ.
+const _kMockShipperName = 'Nguyễn Văn Giao';
+const _kMockShipperPhone = '0909123456';
 
 class OrderTrackingScreen extends StatefulWidget {
   final String orderId;
@@ -100,6 +107,9 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
           _targetPos = newPos;
         });
 
+        // Rung nhẹ mỗi lần có cập nhật vị trí mới — cảm giác "sống" hơn.
+        HapticFeedback.lightImpact();
+
         _markerAnimController.forward(from: 0);
         _mapController.move(newPos, 15);
       });
@@ -107,6 +117,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
       _socket!.on('track:arrived', (_) {
         if (!mounted) return;
         setState(() => _arrived = true);
+        HapticFeedback.mediumImpact();
         _showArrivedDialog();
       });
 
@@ -147,6 +158,29 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
     );
   }
 
+  Future<void> _shareLocation() async {
+    HapticFeedback.selectionClick();
+    final lat = _shipperPos.latitude.toStringAsFixed(6);
+    final lng = _shipperPos.longitude.toStringAsFixed(6);
+    await Share.share(
+      'Theo dõi đơn hàng #${widget.orderCode} của tôi trên AgriLink.\n'
+      'Vị trí shipper hiện tại: https://www.google.com/maps?q=$lat,$lng'
+      '${_estimatedMinutes > 0 ? '\nDự kiến còn $_estimatedMinutes phút.' : ''}',
+    );
+  }
+
+  Future<void> _callShipper() async {
+    HapticFeedback.selectionClick();
+    final uri = Uri(scheme: 'tel', path: _kMockShipperPhone);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Không thể mở ứng dụng gọi điện')),
+      );
+    }
+  }
+
   @override
   void dispose() {
     _socket?.emit('track:leave', {'orderId': widget.orderId});
@@ -162,10 +196,11 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       body: Stack(
         children: [
-          // ── OpenStreetMap ─────────────────────────────────────────────────
+          // ── Map (OpenStreetMap tile / dark tile theo theme) ────────────────
           FlutterMap(
             mapController: _mapController,
             options: MapOptions(
@@ -174,7 +209,9 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
             ),
             children: [
               TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                urlTemplate: isDark
+                    ? 'https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
+                    : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 userAgentPackageName: 'com.agrilink.app',
               ),
               if (_routePoints.length >= 2)
@@ -222,6 +259,11 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                       ),
                     ),
                     const SizedBox(width: 12),
+                    _MapButton(
+                      icon: Icons.share_location_rounded,
+                      onTap: _shareLocation,
+                    ),
+                    const SizedBox(width: 8),
                     _MapButton(
                       icon: Icons.my_location,
                       onTap: () => _mapController.move(_shipperPos, 15),
@@ -335,6 +377,46 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                 style: AppTextStyles.caption.copyWith(color: AppColors.muted)),
           ],
         ),
+        const SizedBox(height: 16),
+        const Divider(height: 1),
+        const SizedBox(height: 16),
+        _buildShipperCard(),
+      ],
+    );
+  }
+
+  Widget _buildShipperCard() {
+    return Row(
+      children: [
+        CircleAvatar(
+          radius: 22,
+          backgroundColor: AppColors.primaryUltraLight,
+          child: const Icon(Icons.person_rounded, color: AppColors.primary),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(_kMockShipperName,
+                  style: AppTextStyles.body
+                      .copyWith(fontWeight: FontWeight.w600)),
+              Text('Shipper AgriLink',
+                  style: AppTextStyles.caption.copyWith(color: AppColors.muted)),
+            ],
+          ),
+        ),
+        _ShipperActionButton(
+          icon: Icons.phone_rounded,
+          onTap: _callShipper,
+        ),
+        const SizedBox(width: 8),
+        _ShipperActionButton(
+          icon: Icons.chat_bubble_rounded,
+          onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Tính năng nhắn tin sắp ra mắt')),
+          ),
+        ),
       ],
     );
   }
@@ -424,6 +506,29 @@ class _MapButton extends StatelessWidget {
           ],
         ),
         child: Icon(icon, size: 20, color: AppColors.ink),
+      ),
+    );
+  }
+}
+
+class _ShipperActionButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _ShipperActionButton({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.primaryUltraLight,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(10),
+          child: Icon(icon, size: 20, color: AppColors.primary),
+        ),
       ),
     );
   }

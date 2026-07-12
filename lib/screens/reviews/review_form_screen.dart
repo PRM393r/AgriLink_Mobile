@@ -43,7 +43,10 @@ class _ReviewFormScreenState extends State<ReviewFormScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
+          SnackBar(
+            content: Text(e.toString().replaceAll('Exception: ', '')),
+            backgroundColor: AppColors.error,
+          ),
         );
       }
     } finally {

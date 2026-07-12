@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import '../models/review_model.dart';
 import 'api_service.dart';
 
@@ -38,8 +39,8 @@ class ReviewService {
       });
       // Nếu thành công (201) sẽ trả về statusCode == 200/201
       return true;
-    } catch (e) {
-      throw Exception('Không thể gửi đánh giá: $e');
+    } on DioException catch (e) {
+      throw Exception(e.error ?? 'Không thể gửi đánh giá');
     }
   }
 }

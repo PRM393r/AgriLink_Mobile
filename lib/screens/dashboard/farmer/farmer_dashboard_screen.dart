@@ -5,22 +5,17 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/constants/app_shadows.dart';
 import '../../../data/models/product_model.dart';
-import '../../../data/repositories/product_repository.dart';
-import '../../../data/services/api_service.dart';
 import '../../../data/services/auth_provider.dart';
 import '../../../router/app_router.dart';
 import '../../../widgets/common/agri_button.dart';
 import '../../../widgets/common/stat_card.dart';
 import '../../../widgets/common/animated_list_item.dart';
 import '../../../widgets/notification/notification_badge.dart';
-import '../../../data/models/product_model.dart';
 import '../../../data/models/order_model.dart';
 import '../../../data/services/product_service.dart';
 import '../../../data/services/order_service.dart';
 import '../../../core/utils/currency_formatter.dart';
-import '../../../router/app_router.dart';
 import 'product_form_screen.dart';
-import 'statistics_screen.dart';
 
 class FarmerDashboardScreen extends StatefulWidget {
   const FarmerDashboardScreen({super.key});

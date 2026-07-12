@@ -212,8 +212,8 @@ class _SellerOrderScreenState extends State<SellerOrderScreen>
                                         ? () => _showAdvanceConfirm(
                                             order.id, order.status, next)
                                         : null,
-                                    onCancel: (order.status != 'delivered' &&
-                                            order.status != 'cancelled')
+                                    onCancel: !['shipping', 'delivered', 'cancelled']
+                                            .contains(order.status)
                                         ? () =>
                                             _showCancelDialog(order.id)
                                         : null,

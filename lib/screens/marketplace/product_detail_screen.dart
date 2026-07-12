@@ -11,6 +11,8 @@ import '../../widgets/product/product_badge.dart';
 import '../../widgets/product/reviews_section.dart';
 import '../../data/services/review_service.dart';
 import '../../data/models/review_model.dart';
+import '../../data/repositories/order_repository.dart';
+import '../../data/services/api_service.dart';
 import '../../router/app_router.dart';
 
 class ProductDetailScreen extends StatefulWidget {
@@ -54,6 +56,57 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         setState(() => _isLoadingReviews = false);
       }
     }
+  }
+
+  Future<void> _handleAddReview(ProductModel? product) async {
+    if (product == null) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    String? orderId;
+    try {
+      final orders = await OrderRepository(ApiService())
+          .getMyOrders(status: 'delivered');
+      final match = orders.firstWhere(
+        (o) => o.items.any((i) => i.productId == product.id),
+        orElse: () => orders.isEmpty
+            ? throw StateError('no orders')
+            : orders.first,
+      );
+      orderId = match.items.any((i) => i.productId == product.id)
+          ? match.id
+          : null;
+    } catch (_) {
+      orderId = null;
+    }
+
+    if (mounted) Navigator.pop(context); // đóng loading dialog
+    if (!mounted) return;
+
+    if (orderId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Bạn cần nhận hàng thành công trước khi đánh giá sản phẩm này'),
+          backgroundColor: AppColors.warning,
+        ),
+      );
+      return;
+    }
+
+    final result = await Navigator.pushNamed(
+      context,
+      AppRouter.reviewForm,
+      arguments: {
+        'productId': product.id,
+        'orderId': orderId,
+        'productName': product.name,
+      },
+    );
+    if (result == true) _fetchReviews();
   }
 
   @override
@@ -197,21 +250,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ReviewsSection(
                         reviews: _reviews,
                         isLoading: _isLoadingReviews,
-                        onAddReview: () async {
-                          if (product == null) return;
-                          final result = await Navigator.pushNamed(
-                            context,
-                            AppRouter.reviewForm,
-                            arguments: {
-                              'productId': product.id,
-                              'orderId': '668541c8d0751836a992fa12',
-                              'productName': product.name,
-                            },
-                          );
-                          if (result == true) {
-                            _fetchReviews();
-                          }
-                        },
+                        onAddReview: () => _handleAddReview(product),
                       ),
                       const SizedBox(height: 100),
                     ],

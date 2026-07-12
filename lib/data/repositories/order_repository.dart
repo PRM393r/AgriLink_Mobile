@@ -8,6 +8,8 @@ class OrderRepository {
 
   OrderRepository(this._apiService);
 
+  // Backend gộp items theo sellerId; giỏ hàng nhiều seller → nhiều order được tạo.
+  // Response: order đơn lẻ khi 1 seller, { orders: [...] } khi nhiều seller.
   Future<List<OrderModel>> createOrder(CreateOrderRequest request) async {
     try {
       final response = await _apiService.post(

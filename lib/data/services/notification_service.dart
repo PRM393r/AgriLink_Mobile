@@ -37,8 +37,8 @@ class NotificationService {
       return {'items': [], 'total': 0, 'unreadCount': 0};
     } on DioException catch (e) {
       throw Exception(e.error ?? 'Lấy thông báo thất bại');
-    } catch (e) {
-      throw Exception('Lỗi: $e');
+    } catch (_) {
+      throw Exception('Lấy thông báo thất bại');
     }
   }
 
@@ -69,8 +69,8 @@ class NotificationService {
       );
     } on DioException catch (e) {
       throw Exception(e.error ?? 'Đánh dấu đã đọc thất bại');
-    } catch (e) {
-      throw Exception('Lỗi: $e');
+    } catch (_) {
+      throw Exception('Đánh dấu đã đọc thất bại');
     }
   }
 
@@ -80,8 +80,8 @@ class NotificationService {
       await _apiService.patch(ApiConstants.notificationsReadAll);
     } on DioException catch (e) {
       throw Exception(e.error ?? 'Đánh dấu đọc tất cả thất bại');
-    } catch (e) {
-      throw Exception('Lỗi: $e');
+    } catch (_) {
+      throw Exception('Đánh dấu đọc tất cả thất bại');
     }
   }
 }

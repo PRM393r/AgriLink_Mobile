@@ -316,6 +316,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             content: Text(
               error.toString().replaceFirst('Exception:', '').trim(),
             ),
+            backgroundColor: AppColors.error,
           ),
         );
       }

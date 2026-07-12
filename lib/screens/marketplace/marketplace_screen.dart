@@ -7,8 +7,6 @@ import '../../data/services/api_service.dart';
 import '../../widgets/product/product_card.dart';
 import '../../widgets/common/animated_list_item.dart';
 import '../../router/app_router.dart';
-import 'package:provider/provider.dart';
-import '../../data/services/product_service.dart';
 
 class MarketplaceScreen extends StatefulWidget {
   const MarketplaceScreen({super.key});

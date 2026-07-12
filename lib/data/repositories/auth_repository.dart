@@ -22,8 +22,8 @@ class AuthRepository {
       );
     } on DioException catch (e) {
       throw Exception(e.error ?? 'Đăng ký thất bại');
-    } catch (e) {
-      throw Exception('Đăng ký thất bại: $e');
+    } catch (_) {
+      throw Exception('Đăng ký thất bại');
     }
   }
 
@@ -39,8 +39,8 @@ class AuthRepository {
       );
     } on DioException catch (e) {
       throw Exception(e.error ?? 'Xác thực email thất bại');
-    } catch (e) {
-      throw Exception('Lỗi xác thực: $e');
+    } catch (_) {
+      throw Exception('Lỗi xác thực');
     }
   }
 
@@ -50,8 +50,8 @@ class AuthRepository {
       await _apiService.post(ApiConstants.resendOtp, data: {'email': email});
     } on DioException catch (e) {
       throw Exception(e.error ?? 'Gửi lại OTP thất bại');
-    } catch (e) {
-      throw Exception('Lỗi: $e');
+    } catch (_) {
+      throw Exception('Gửi lại mã OTP thất bại');
     }
   }
 
@@ -83,8 +83,8 @@ class AuthRepository {
       return UserModel.fromJson(userJson);
     } on DioException catch (e) {
       throw Exception(e.error ?? 'Đăng nhập thất bại');
-    } catch (e) {
-      throw Exception('Đăng nhập thất bại: $e');
+    } catch (_) {
+      throw Exception('Đăng nhập thất bại');
     }
   }
 
@@ -98,8 +98,8 @@ class AuthRepository {
       return UserModel.fromJson(data);
     } on DioException catch (e) {
       throw Exception(e.error ?? 'Lấy thông tin tài khoản thất bại');
-    } catch (e) {
-      throw Exception('Lỗi lấy thông tin: $e');
+    } catch (_) {
+      throw Exception('Lấy thông tin tài khoản thất bại');
     }
   }
 
@@ -127,8 +127,8 @@ class AuthRepository {
       return UserModel.fromJson(data);
     } on DioException catch (e) {
       throw Exception(e.error ?? 'Cập nhật hồ sơ thất bại');
-    } catch (e) {
-      throw Exception('Lỗi cập nhật hồ sơ: $e');
+    } catch (_) {
+      throw Exception('Cập nhật hồ sơ thất bại');
     }
   }
 
@@ -139,8 +139,8 @@ class AuthRepository {
       return getMe();
     } on DioException catch (e) {
       throw Exception(e.error ?? 'Cập nhật vai trò thất bại');
-    } catch (e) {
-      throw Exception('Lỗi cập nhật vai trò: $e');
+    } catch (_) {
+      throw Exception('Cập nhật vai trò thất bại');
     }
   }
 
@@ -166,8 +166,8 @@ class AuthRepository {
       return newAccess;
     } on DioException catch (e) {
       throw Exception(e.error ?? 'Làm mới token thất bại');
-    } catch (e) {
-      throw Exception('Lỗi: $e');
+    } catch (_) {
+      throw Exception('Làm mới token thất bại');
     }
   }
 

@@ -122,8 +122,8 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
       });
 
       _socket!.connect();
-    } catch (e) {
-      if (mounted) setState(() => _error = e.toString());
+    } catch (_) {
+      if (mounted) setState(() => _error = 'Không thể kết nối tracking server');
     }
   }
 

@@ -53,8 +53,8 @@ class ProductRepository {
       return [];
     } on DioException catch (e) {
       throw Exception(e.error ?? 'Lấy danh sách sản phẩm thất bại');
-    } catch (e) {
-      throw Exception('Lỗi kết nối: $e');
+    } catch (_) {
+      throw Exception('Lỗi kết nối');
     }
   }
 
@@ -69,8 +69,8 @@ class ProductRepository {
       throw Exception('Chi tiết sản phẩm không hợp lệ');
     } on DioException catch (e) {
       throw Exception(e.error ?? 'Lấy chi tiết sản phẩm thất bại');
-    } catch (e) {
-      throw Exception('Lỗi: $e');
+    } catch (_) {
+      throw Exception('Lấy chi tiết sản phẩm thất bại');
     }
   }
 
@@ -88,8 +88,8 @@ class ProductRepository {
       throw Exception('Tạo sản phẩm thất bại');
     } on DioException catch (e) {
       throw Exception(e.error ?? 'Đăng bán sản phẩm thất bại');
-    } catch (e) {
-      throw Exception('Lỗi: $e');
+    } catch (_) {
+      throw Exception('Đăng bán sản phẩm thất bại');
     }
   }
 
@@ -107,8 +107,8 @@ class ProductRepository {
       throw Exception('Cập nhật sản phẩm thất bại');
     } on DioException catch (e) {
       throw Exception(e.error ?? 'Cập nhật sản phẩm thất bại');
-    } catch (e) {
-      throw Exception('Lỗi: $e');
+    } catch (_) {
+      throw Exception('Cập nhật sản phẩm thất bại');
     }
   }
 
@@ -118,8 +118,8 @@ class ProductRepository {
       await _apiService.delete('${ApiConstants.products}/$id');
     } on DioException catch (e) {
       throw Exception(e.error ?? 'Xóa sản phẩm thất bại');
-    } catch (e) {
-      throw Exception('Lỗi: $e');
+    } catch (_) {
+      throw Exception('Xóa sản phẩm thất bại');
     }
   }
 
@@ -148,8 +148,8 @@ class ProductRepository {
       return [];
     } on DioException catch (e) {
       throw Exception(e.error ?? 'Lấy danh sách sản phẩm thất bại');
-    } catch (e) {
-      throw Exception('Lỗi kết nối: $e');
+    } catch (_) {
+      throw Exception('Lỗi kết nối');
     }
   }
 
@@ -206,8 +206,8 @@ class ProductRepository {
       throw Exception('Upload ảnh thất bại');
     } on DioException catch (e) {
       throw Exception(e.error ?? 'Upload ảnh thất bại');
-    } catch (e) {
-      throw Exception('Lỗi: $e');
+    } catch (_) {
+      throw Exception('Upload ảnh thất bại');
     }
   }
 }

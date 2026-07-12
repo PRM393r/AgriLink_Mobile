@@ -16,7 +16,6 @@ import '../orders/seller_order_screen.dart';
 import '../profile/profile_screen.dart';
 import '../dashboard/farmer/my_products_screen.dart';
 import '../../data/providers/notification_provider.dart';
-import '../../widgets/notification/notification_badge.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -36,7 +35,9 @@ class _HomeScreenState extends State<HomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         context.read<WishlistProvider>().fetchWishlistIds();
-        context.read<NotificationProvider>().fetchNotifications();
+        final notifications = context.read<NotificationProvider>();
+        notifications.reset();
+        notifications.fetchNotifications(force: true);
       }
     });
   }
@@ -137,26 +138,10 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return Scaffold(
-      body: Stack(
-        children: [
-          PageView(
-            controller: _pageController,
-            physics: const NeverScrollableScrollPhysics(),
-            children: screens,
-          ),
-          const Positioned(
-            top: 8,
-            right: 8,
-            child: SafeArea(
-              child: Material(
-                color: AppColors.canvas,
-                elevation: 2,
-                shape: CircleBorder(),
-                child: NotificationBadge(),
-              ),
-            ),
-          ),
-        ],
+      body: PageView(
+        controller: _pageController,
+        physics: const NeverScrollableScrollPhysics(),
+        children: screens,
       ),
       bottomNavigationBar: _buildCustomBottomNav(navItems),
     );

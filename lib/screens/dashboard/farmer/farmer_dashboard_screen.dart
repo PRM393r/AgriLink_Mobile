@@ -12,6 +12,7 @@ import '../../../router/app_router.dart';
 import '../../../widgets/common/agri_button.dart';
 import '../../../widgets/common/stat_card.dart';
 import '../../../widgets/common/animated_list_item.dart';
+import '../../../widgets/notification/notification_badge.dart';
 import '../../../data/models/product_model.dart';
 import '../../../data/models/order_model.dart';
 import '../../../data/services/product_service.dart';
@@ -184,6 +185,16 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
                     ),
                   ),
                   const SizedBox(width: 12),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.canvas.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const NotificationBadge(
+                      iconColor: AppColors.canvas,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
                   CircleAvatar(
                     radius: 24,
                     backgroundColor: AppColors.canvas.withValues(alpha: 0.2),

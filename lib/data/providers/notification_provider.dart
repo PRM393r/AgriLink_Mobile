@@ -19,6 +19,15 @@ class NotificationProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
+  void reset() {
+    _notifications = [];
+    _unreadCount = 0;
+    _isLoading = false;
+    _errorMessage = null;
+    _hasLoaded = false;
+    notifyListeners();
+  }
+
   Future<void> fetchNotifications({bool force = false}) async {
     if (_isLoading || (_hasLoaded && !force)) return;
     _isLoading = true;

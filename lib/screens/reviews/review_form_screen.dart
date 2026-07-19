@@ -25,6 +25,18 @@ class _ReviewFormScreenState extends State<ReviewFormScreen> {
   }
 
   Future<void> _submitReview(String productId, String orderId) async {
+    if (productId.isEmpty || orderId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Thiếu thông tin đơn hàng. Chỉ đánh giá sau khi đã nhận hàng.',
+          ),
+          backgroundColor: AppColors.warning,
+        ),
+      );
+      return;
+    }
+
     setState(() => _isSubmitting = true);
     try {
       final service = context.read<ReviewService>();
@@ -42,9 +54,14 @@ class _ReviewFormScreenState extends State<ReviewFormScreen> {
       }
     } catch (e) {
       if (mounted) {
+        final msg = e.toString().replaceAll('Exception: ', '');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.toString().replaceAll('Exception: ', '')),
+            content: Text(
+              msg.isEmpty
+                  ? 'Không gửi được đánh giá. Cần đã mua và nhận hàng.'
+                  : msg,
+            ),
             backgroundColor: AppColors.error,
           ),
         );
@@ -63,6 +80,7 @@ class _ReviewFormScreenState extends State<ReviewFormScreen> {
     final productId = args?['productId'] as String? ?? '';
     final orderId = args?['orderId'] as String? ?? '';
     final productName = args?['productName'] as String? ?? 'Sản phẩm';
+    final canReview = productId.isNotEmpty && orderId.isNotEmpty;
 
     return Scaffold(
       backgroundColor: AppColors.surfaceElevated,
@@ -72,7 +90,19 @@ class _ReviewFormScreenState extends State<ReviewFormScreen> {
         backgroundColor: AppColors.canvas,
         elevation: 0,
       ),
-      body: SingleChildScrollView(
+      body: !canReview
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  'Bạn chỉ có thể đánh giá sau khi đơn hàng đã giao thành công.\n'
+                  'Mở chi tiết đơn (trạng thái Hoàn thành) để viết đánh giá.',
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.body.copyWith(color: AppColors.muted),
+                ),
+              ),
+            )
+          : SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,

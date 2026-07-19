@@ -96,7 +96,31 @@ class _TraceScreenState extends State<TraceScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            Text('Mã demo: AGL-TOMATO-001', style: AppTextStyles.caption),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Mã demo (seed BE):',
+                style: AppTextStyles.caption.copyWith(fontWeight: FontWeight.w600),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final code in const ['AGL-TOMATO-001', 'AGL-DURIAN-001'])
+                  ActionChip(
+                    label: Text(code),
+                    avatar: const Icon(Icons.qr_code_2, size: 18),
+                    onPressed: provider.isLoading
+                        ? null
+                        : () {
+                            _codeController.text = code;
+                            _lookup(code);
+                          },
+                  ),
+              ],
+            ),
           ],
         ),
       ),

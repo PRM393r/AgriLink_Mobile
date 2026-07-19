@@ -4,6 +4,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../data/models/user_model.dart';
+import '../../data/providers/wishlist_provider.dart';
 import '../../data/services/auth_provider.dart';
 import '../../router/app_router.dart';
 
@@ -36,6 +37,9 @@ class ProfileScreen extends StatelessWidget {
       ),
     );
     if (confirm == true) {
+      try {
+        context.read<WishlistProvider>().clear();
+      } catch (_) {}
       await authProvider.logout();
       if (context.mounted) {
         Navigator.pushNamedAndRemoveUntil(
@@ -70,6 +74,7 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
+    final wishlist = Provider.of<WishlistProvider>(context);
     final user = auth.currentUser;
     final avatar = _avatarImage(user);
     final name = user?.fullName.trim().isNotEmpty == true
@@ -81,6 +86,9 @@ class ProfileScreen extends StatelessWidget {
         : 'Chưa cập nhật email';
     final address = user?.address?.trim() ?? '';
     final role = user?.role ?? '';
+    final isSeller = role == 'farmer' || role == 'supplier';
+    final bankIncomplete = isSeller && !(user?.bankInfo.isComplete ?? false);
+    final wishlistCount = wishlist.wishlistProductIds.length;
 
     return Scaffold(
       backgroundColor: AppColors.surfaceElevated,
@@ -225,15 +233,51 @@ class ProfileScreen extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
               child: Row(
                 children: [
-                  _statItem('0', 'Đơn hàng'),
+                  _statItem('—', 'Đơn hàng'),
                   _statDivider(),
-                  _statItem('0', 'Yêu thích'),
+                  _statItem('$wishlistCount', 'Yêu thích'),
                   _statDivider(),
-                  _statItem('0', 'Điểm'),
+                  _statItem(user?.isValidRole == true ? '✓' : '—', 'Vai trò'),
                 ],
               ),
             ),
           ),
+
+          if (bankIncomplete)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
+                child: Material(
+                  color: AppColors.warningLight,
+                  borderRadius: BorderRadius.circular(12),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () => Navigator.pushNamed(
+                      context,
+                      AppRouter.editProfile,
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.account_balance_outlined,
+                              color: AppColors.warning, size: 20),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'Seller demo: bổ sung STK ngân hàng để hiện VietQR khi khách chuyển khoản.',
+                              style: AppTextStyles.caption
+                                  .copyWith(color: AppColors.body),
+                            ),
+                          ),
+                          const Icon(Icons.chevron_right, color: AppColors.muted),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
 
           // ── Menu sections ──
           SliverToBoxAdapter(
@@ -256,8 +300,10 @@ class ProfileScreen extends StatelessWidget {
                   Icons.edit_outlined,
                   'Chỉnh sửa hồ sơ',
                   AppColors.primary,
-                  onTap: () =>
-                      Navigator.pushNamed(context, AppRouter.editProfile),
+                  onTap: () async {
+                    await Navigator.pushNamed(context, AppRouter.editProfile);
+                    // Profile rebuilds via AuthProvider after successful update.
+                  },
                 ),
                 _MenuItem(
                   Icons.receipt_long_outlined,
@@ -265,6 +311,13 @@ class ProfileScreen extends StatelessWidget {
                   AppColors.accent,
                   onTap: () =>
                       Navigator.pushNamed(context, AppRouter.orderHistory),
+                ),
+                _MenuItem(
+                  Icons.favorite_outline,
+                  'Yêu thích',
+                  AppColors.error,
+                  onTap: () =>
+                      Navigator.pushNamed(context, AppRouter.wishlist),
                 ),
                 _MenuItem(
                   Icons.query_stats_rounded,
@@ -279,7 +332,6 @@ class ProfileScreen extends StatelessWidget {
                   AppColors.info,
                   onTap: () => Navigator.pushNamed(context, AppRouter.trace),
                 ),
-                _MenuItem(Icons.favorite_outline, 'Yêu thích', AppColors.error),
               ]),
             ),
           ),

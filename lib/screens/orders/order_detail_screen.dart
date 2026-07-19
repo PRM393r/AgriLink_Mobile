@@ -5,6 +5,7 @@ import '../../data/models/order_model.dart';
 import '../../data/repositories/order_repository.dart';
 import '../../data/services/api_service.dart';
 import '../../data/services/auth_provider.dart';
+import '../../router/app_router.dart';
 import 'package:provider/provider.dart';
 
 class OrderDetailScreen extends StatefulWidget {
@@ -173,6 +174,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     final isSeller = user != null &&
         (user.isFarmer || user.isSupplier) &&
         user.id == order.sellerId;
+    final isBuyer = user != null && user.id == order.buyerId;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -189,9 +191,38 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             title: 'Sản phẩm đặt mua',
             icon: Icons.shopping_bag_outlined,
             child: Column(
-              children: order.items
-                  .map((item) => _ItemRow(item: item))
-                  .toList(),
+              children: [
+                ...order.items.map((item) => _ItemRow(item: item)),
+                if (isBuyer && order.isDelivered) ...[
+                  const SizedBox(height: 8),
+                  const Divider(),
+                  ...order.items.map((item) {
+                    final productId = item.productId ?? '';
+                    if (productId.isEmpty) return const SizedBox.shrink();
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton.icon(
+                          onPressed: () {
+                            Navigator.pushNamed(
+                              context,
+                              AppRouter.reviewForm,
+                              arguments: {
+                                'productId': productId,
+                                'orderId': order.id,
+                                'productName': item.productName,
+                              },
+                            );
+                          },
+                          icon: const Icon(Icons.rate_review_outlined, size: 18),
+                          label: Text('Đánh giá ${item.productName}'),
+                        ),
+                      ),
+                    );
+                  }),
+                ],
+              ],
             ),
           ),
           const SizedBox(height: 12),

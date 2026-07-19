@@ -85,6 +85,7 @@ class _LoginScreenState extends State<LoginScreen>
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   bool _obscure = true;
+  bool _didApplyPrefill = false;
 
   late final AnimationController _fadeController;
   late final Animation<double> _fadeAnimation;
@@ -113,6 +114,28 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_didApplyPrefill) return;
+    _didApplyPrefill = true;
+
+    // Prefill from verify-email route args or AuthProvider.pendingEmail
+    final args = ModalRoute.of(context)?.settings.arguments;
+    String? prefill;
+    if (args is String && args.trim().isNotEmpty) {
+      prefill = args.trim();
+    } else if (args is Map && args['prefillEmail'] is String) {
+      prefill = (args['prefillEmail'] as String).trim();
+    }
+    prefill ??=
+        Provider.of<AuthProvider>(context, listen: false).pendingEmail?.trim();
+
+    if (prefill != null && prefill.isNotEmpty) {
+      _emailCtrl.text = prefill;
+    }
+  }
+
+  @override
   void dispose() {
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
@@ -126,8 +149,8 @@ class _LoginScreenState extends State<LoginScreen>
     auth.login(
       email: _emailCtrl.text.trim(),
       password: _passwordCtrl.text,
-      onSuccess: (isNewUser) {
-        if (isNewUser) {
+      onSuccess: (needsRoleSelection) {
+        if (needsRoleSelection) {
           Navigator.pushNamedAndRemoveUntil(
             context, AppRouter.rolePicker, (r) => false,
           );
@@ -241,7 +264,8 @@ class _LoginScreenState extends State<LoginScreen>
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Nhập email và mật khẩu để tiếp tục.',
+                              'Nhập email và mật khẩu để tiếp tục. '
+                              '(Dev OTP email: 123456 nếu chưa cấu hình SMTP)',
                               style: AppTextStyles.subtitle.copyWith(
                                 color: AppColors.muted,
                               ),

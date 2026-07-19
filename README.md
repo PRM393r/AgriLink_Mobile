@@ -1,17 +1,58 @@
-# agrilink
+# AgriLink Mobile
 
-A new Flutter project.
+Flutter client for AgriLink (PRM393) — marketplace nông sản 3 role: **customer / farmer / supplier**.
 
-## Getting Started
+## Auth (email-first)
 
-This project is a starting point for a Flutter application.
+Product auth path (no phone OTP UI):
 
-A few resources to get you started if this is your first Flutter project:
+```text
+Register (email + password + fullName)
+  → POST /auth/register
+Verify email OTP
+  → POST /auth/verify-email
+Login
+  → POST /auth/login → JWT
+  → if role empty → RolePicker → PUT /users/me/role
+  → Home
+```
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+- **Dev OTP:** when BE has no SMTP (`MAIL_USER` empty), OTP is always `123456`.
+- **Demo seed accounts** (password `demo123`):
+  - `customer1@agrilink.vn`
+  - `farmer1@agrilink.vn`
+  - `supplier1@agrilink.vn`
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Backend
+
+- Base URL: `http://localhost:5000/api/v1` (Android emulator uses `10.0.2.2`)
+- Repo: `AgriLink_Mobile_BE` (Express + MongoDB)
+
+## Run
+
+```bash
+flutter pub get
+flutter run -d chrome
+# or Android emulator
+flutter run
+```
+
+## Payment (demo only)
+
+Payment **không** integrate cổng production (VNPay/PayOS).  
+Luồng demo:
+
+- **COD** — tạo đơn xong là success  
+- **Chuyển khoản / QR** — màn Payment QR; bấm xác nhận **luôn thành công** (best-effort gọi BE `payment-confirm`, lỗi API vẫn cho qua)
+
+## Demo
+
+Xem **[DEMO_SCRIPT.md](./DEMO_SCRIPT.md)** — kịch bản 5–8 phút + checklist DoD.
+
+Trace seed: `AGL-TOMATO-001`, `AGL-DURIAN-001`.
+
+## Tests
+
+```bash
+flutter test
+```

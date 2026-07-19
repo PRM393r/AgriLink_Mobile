@@ -61,7 +61,9 @@ class UserModel {
       fullName:   json['fullName']  as String? ?? '',
       email:      json['email']     as String? ?? '',
       phone:      json['phone']     as String?,
-      role:       json['role']      as String? ?? 'customer',
+      // Keep empty role as '' so first-time users are forced through RolePicker.
+      // Never default to 'customer' here — that silently skips role selection.
+      role:       (json['role'] as String?)?.trim() ?? '',
       avatarUrl:  json['avatarUrl'] as String?,
       address:    json['address']   as String?,
       isVerified: json['isVerified'] as bool? ?? false,

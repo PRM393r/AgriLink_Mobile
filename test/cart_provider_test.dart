@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:agrilink/data/providers/cart_provider.dart';
 import 'package:agrilink/data/models/product_model.dart';
 
@@ -27,11 +28,15 @@ ProductModel _makeProduct({
     );
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('CartProvider', () {
     late CartProvider cart;
 
-    setUp(() {
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
       cart = CartProvider();
+      await cart.load();
     });
 
     test('starts empty', () {
@@ -130,6 +135,18 @@ void main() {
       cart.addListener(() => notifyCount++);
       cart.clearCart();
       expect(notifyCount, 1);
+    });
+
+    test('persists cart across provider instances', () async {
+      cart.addItem(_makeProduct(id: 'p1', price: 10000), 2);
+      // Allow async SharedPreferences write
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      final restored = CartProvider();
+      await restored.load();
+      expect(restored.items.length, 1);
+      expect(restored.totalItems, 2);
+      expect(restored.totalPrice, 20000.0);
     });
   });
 }

@@ -54,16 +54,36 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
     });
     try {
       final status = _tabs[_tabController.index]['status']!;
-      final orders = await _repo.getMyOrders(status: status);
-      if (mounted) setState(() {
-        _orders = orders;
-        _isLoading = false;
-      });
+      // BE filters exact status; "shipping" tab should include full in-progress chain.
+      List<OrderModel> orders;
+      if (status == 'shipping') {
+        final all = await _repo.getMyOrders(status: 'all');
+        orders = all
+            .where(
+              (o) =>
+                  o.isActive ||
+                  o.status == 'shipping' ||
+                  o.status == 'confirmed' ||
+                  o.status == 'preparing' ||
+                  o.status == 'handed_to_logistics',
+            )
+            .toList();
+      } else {
+        orders = await _repo.getMyOrders(status: status);
+      }
+      if (mounted) {
+        setState(() {
+          _orders = orders;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
-      if (mounted) setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
     }
   }
 

@@ -70,21 +70,26 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     }
     
     setState(() => _isLoading = true);
-    
+
     try {
       final productService = context.read<ProductService>();
-      
-      // Upload new images first
-      List<String> uploadedUrls = [];
-      for (var file in _newImages) {
-        final url = await productService.uploadImage(file);
-        uploadedUrls.add(url);
+
+      // Upload images best-effort (demo: missing Cloudinary must not block create)
+      final uploadedUrls = <String>[];
+      var uploadFailed = 0;
+      for (final file in _newImages) {
+        try {
+          final url = await productService.uploadImage(file);
+          if (url.isNotEmpty) uploadedUrls.add(url);
+        } catch (_) {
+          uploadFailed++;
+        }
       }
-      
+
       final finalImages = [..._existingImages, ...uploadedUrls];
-      
+
       final productData = ProductModel(
-        id: widget.product?.id ?? '', // id is ignored by backend on create
+        id: widget.product?.id ?? '',
         name: _nameCtrl.text.trim(),
         description: _descCtrl.text.trim(),
         pricePerUnit: double.tryParse(_priceCtrl.text) ?? 0,
@@ -106,13 +111,17 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       } else {
         await productService.publishProduct(productData);
       }
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(isEditing ? 'Cập nhật thành công' : 'Đăng bán thành công')),
-        );
-        Navigator.pop(context, true); // true indicates success
-      }
+
+      if (!mounted) return;
+
+      final msg = isEditing ? 'Cập nhật thành công' : 'Đăng bán thành công';
+      final uploadNote = uploadFailed > 0
+          ? ' ($uploadFailed ảnh bỏ qua — upload demo/Cloudinary lỗi)'
+          : '';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$msg$uploadNote')),
+      );
+      Navigator.pop(context, true);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

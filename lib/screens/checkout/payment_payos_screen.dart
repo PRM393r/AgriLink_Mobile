@@ -7,7 +7,6 @@ import '../../core/constants/app_text_styles.dart';
 import '../../data/models/order_model.dart';
 import '../../data/providers/notification_provider.dart';
 import '../../data/repositories/order_repository.dart';
-import '../../data/services/api_service.dart';
 import '../../router/app_router.dart';
 import '../../widgets/common/agri_button.dart';
 
@@ -21,8 +20,6 @@ class PaymentPayosScreen extends StatefulWidget {
 }
 
 class _PaymentPayosScreenState extends State<PaymentPayosScreen> {
-  final _repo = OrderRepository(ApiService());
-
   bool _isLoadingLink = false;
   bool _isCheckingStatus = false;
   String? _checkoutUrl;
@@ -42,7 +39,8 @@ class _PaymentPayosScreenState extends State<PaymentPayosScreen> {
       _checkoutUrl = null;
     });
     try {
-      final result = await _repo.createPayosPaymentLink(_order.id);
+      final repo = context.read<OrderRepository>();
+      final result = await repo.createPayosPaymentLink(_order.id);
       if (!mounted) return;
       setState(() => _checkoutUrl = result['checkoutUrl'] as String?);
     } catch (error) {
@@ -78,7 +76,8 @@ class _PaymentPayosScreenState extends State<PaymentPayosScreen> {
     if (_isCheckingStatus) return;
     setState(() => _isCheckingStatus = true);
     try {
-      final status = await _repo.getPayosPaymentStatus(_order.id);
+      final repo = context.read<OrderRepository>();
+      final status = await repo.getPayosPaymentStatus(_order.id);
       if (!mounted) return;
       if (status == 'paid') {
         await context.read<NotificationProvider>().refresh();

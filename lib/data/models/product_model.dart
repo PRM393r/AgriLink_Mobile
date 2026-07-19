@@ -82,8 +82,6 @@ class ProductModel {
   }
 
   Map<String, dynamic> toJson() {
-    print('Converting ProductModel to JSON: $this');
-    print('ProductModel IMG: ${images}');
     return {
       'id': id,
       'name': name,

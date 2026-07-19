@@ -64,7 +64,8 @@ class _PricesScreenState extends State<PricesScreen> {
                 child: EmptyState(
                   icon: Icons.query_stats_rounded,
                   title: 'Không có dữ liệu phù hợp',
-                  message: 'Hãy chọn danh mục hoặc khu vực khác.',
+                  message:
+                      'Hãy chọn danh mục/khu vực khác, hoặc chạy npm run seed trên BE để có bảng giá demo.',
                 ),
               )
             else

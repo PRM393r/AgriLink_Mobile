@@ -7,7 +7,6 @@ import '../../core/constants/app_text_styles.dart';
 import '../../data/models/notification_model.dart';
 import '../../data/providers/notification_provider.dart';
 import '../../data/repositories/order_repository.dart';
-import '../../data/services/api_service.dart';
 import '../../router/app_router.dart';
 import '../../widgets/common/agri_card.dart';
 import '../../widgets/common/empty_state.dart';
@@ -35,7 +34,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     if (orderId == null || orderId.isEmpty || !mounted) return;
 
     try {
-      final order = await OrderRepository(ApiService()).getOrderById(orderId);
+      final order = await context.read<OrderRepository>().getOrderById(orderId);
       if (mounted) {
         Navigator.pushNamed(
           context,

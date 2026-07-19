@@ -25,11 +25,16 @@ import 'data/providers/trace_provider.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Restore local cart before first frame so badge/count is correct on Home.
+  final cartProvider = CartProvider();
+  await cartProvider.load();
+
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => CartProvider()),
+        ChangeNotifierProvider<CartProvider>.value(value: cartProvider),
         Provider<ApiService>(create: (_) => ApiService()),
         ProxyProvider<ApiService, NotificationService>(
           update: (_, api, __) => NotificationService(api),

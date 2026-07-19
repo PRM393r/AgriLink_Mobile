@@ -6,10 +6,11 @@ import '../../data/providers/cart_provider.dart';
 import '../../data/models/cart_item_model.dart';
 import '../../data/models/order_model.dart';
 import '../../data/repositories/order_repository.dart';
-import '../../data/services/api_service.dart';
+import '../../data/services/auth_provider.dart';
 import '../../widgets/common/agri_button.dart';
 import '../../data/providers/notification_provider.dart';
 import '../../router/app_router.dart';
+import '../../widgets/common/empty_state.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
@@ -26,6 +27,47 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final _noteController = TextEditingController();
 
   String _paymentMethod = 'cod';
+  bool _isPlacing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final auth = context.read<AuthProvider>();
+      if (!auth.isAuthenticated) {
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRouter.login,
+          (route) => false,
+        );
+        return;
+      }
+      if (auth.needsRoleSelection) {
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRouter.rolePicker,
+          (route) => false,
+        );
+        return;
+      }
+
+      final user = auth.currentUser;
+      if (user == null) return;
+      if (_nameController.text.isEmpty && user.fullName.isNotEmpty) {
+        _nameController.text = user.fullName;
+      }
+      if (_phoneController.text.isEmpty &&
+          (user.phone != null && user.phone!.isNotEmpty)) {
+        _phoneController.text = user.phone!;
+      }
+      if (_addressController.text.isEmpty &&
+          (user.address != null && user.address!.isNotEmpty)) {
+        _addressController.text = user.address!;
+      }
+      setState(() {});
+    });
+  }
 
   @override
   void dispose() {
@@ -40,6 +82,25 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Widget build(BuildContext context) {
     final cart = Provider.of<CartProvider>(context);
     final items = cart.items;
+
+    if (items.isEmpty) {
+      return Scaffold(
+        backgroundColor: AppColors.surfaceSoft,
+        appBar: AppBar(
+          title: const Text('Xác nhận đơn hàng'),
+          backgroundColor: Colors.white,
+          foregroundColor: AppColors.ink,
+          elevation: 0,
+        ),
+        body: EmptyState(
+          icon: Icons.shopping_cart_outlined,
+          title: 'Giỏ hàng trống',
+          message: 'Thêm sản phẩm trước khi thanh toán.',
+          actionLabel: 'Về giỏ hàng',
+          onActionPressed: () => Navigator.pop(context),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: AppColors.surfaceSoft,
@@ -274,25 +335,55 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
-  bool _isPlacing = false;
-
   Future<void> _onPlaceOrder() async {
     if (!_formKey.currentState!.validate()) return;
     if (_isPlacing) return;
 
     final cart = Provider.of<CartProvider>(context, listen: false);
+    if (cart.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Giỏ hàng trống'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    final auth = context.read<AuthProvider>();
+    if (!auth.isAuthenticated) {
+      Navigator.pushNamed(context, AppRouter.login);
+      return;
+    }
+    if (auth.currentUser?.isCustomer != true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Chỉ tài khoản khách hàng (customer) mới đặt hàng được.'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
     setState(() => _isPlacing = true);
 
     try {
-      final repo = OrderRepository(ApiService());
+      final repo = context.read<OrderRepository>();
       final request = CreateOrderRequest(
         items: cart.items
-            .map((i) => CreateOrderItem(productId: i.productId, quantity: i.quantity))
+            .map(
+              (i) => CreateOrderItem(
+                productId: i.productId,
+                quantity: i.quantity,
+              ),
+            )
             .toList(),
         deliveryName: _nameController.text.trim(),
         deliveryPhone: _phoneController.text.trim(),
         address: _addressController.text.trim(),
-        note: _noteController.text.trim().isEmpty ? null : _noteController.text.trim(),
+        note: _noteController.text.trim().isEmpty
+            ? null
+            : _noteController.text.trim(),
         paymentMethod: _paymentMethod,
       );
       final orders = await repo.createOrder(request);
@@ -301,7 +392,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       await context.read<NotificationProvider>().refresh();
       if (!mounted) return;
       if (_paymentMethod == 'cod') {
-        Navigator.pushReplacementNamed(context, AppRouter.orderSuccess);
+        Navigator.pushReplacementNamed(
+          context,
+          AppRouter.orderSuccess,
+          arguments: orders,
+        );
       } else {
         Navigator.pushReplacementNamed(
           context,

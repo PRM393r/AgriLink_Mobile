@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
+import '../../data/models/order_model.dart';
 import '../../widgets/common/agri_button.dart';
 import '../../router/app_router.dart';
 
@@ -35,8 +36,20 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
     super.dispose();
   }
 
+  List<OrderModel> get _orders {
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is List<OrderModel>) return args;
+    if (args is OrderModel) return [args];
+    return const [];
+  }
+
   @override
   Widget build(BuildContext context) {
+    final codes = _orders
+        .map((o) => o.orderCode)
+        .where((c) => c.isNotEmpty)
+        .toList(growable: false);
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -76,6 +89,19 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 12),
+                    if (codes.isNotEmpty) ...[
+                      Text(
+                        codes.length == 1
+                            ? 'Mã đơn: ${codes.first}'
+                            : 'Mã đơn (${codes.length}):\n${codes.join('\n')}',
+                        style: AppTextStyles.body.copyWith(
+                          color: AppColors.ink,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
+                    ],
                     Text(
                       'Cảm ơn bạn đã tin tưởng AgriLink.\nĐơn hàng của bạn đang chờ người bán xác nhận.',
                       style: AppTextStyles.body.copyWith(
@@ -92,9 +118,10 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
                       onPressed: () {
                         Navigator.pushNamedAndRemoveUntil(
                           context,
-                          AppRouter.orderHistory,
-                          (route) => route.settings.name == AppRouter.home,
+                          AppRouter.home,
+                          (route) => false,
                         );
+                        Navigator.pushNamed(context, AppRouter.orderHistory);
                       },
                     ),
                     const SizedBox(height: 12),

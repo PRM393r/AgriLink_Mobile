@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../data/models/order_model.dart';
 import '../../data/repositories/order_repository.dart';
-import '../../data/services/api_service.dart';
+import '../../data/services/auth_provider.dart';
+import '../../router/app_router.dart';
 
 class SellerOrderScreen extends StatefulWidget {
   const SellerOrderScreen({super.key});
@@ -19,11 +21,11 @@ class _SellerOrderScreenState extends State<SellerOrderScreen>
 
   static const _tabs = [
     {'label': 'Chờ xác nhận', 'status': 'pending'},
-    {'label': 'Đã xác nhận',  'status': 'confirmed'},
-    {'label': 'Chuẩn bị',     'status': 'preparing'},
-    {'label': 'Đang giao',    'status': 'shipping'},
-    {'label': 'Hoàn thành',   'status': 'delivered'},
-    {'label': 'Đã hủy',       'status': 'cancelled'},
+    {'label': 'Đã xác nhận', 'status': 'confirmed'},
+    {'label': 'Chuẩn bị', 'status': 'preparing'},
+    {'label': 'Đang giao', 'status': 'shipping'},
+    {'label': 'Hoàn thành', 'status': 'delivered'},
+    {'label': 'Đã hủy', 'status': 'cancelled'},
   ];
 
   List<OrderModel> _orders = [];
@@ -40,12 +42,30 @@ class _SellerOrderScreenState extends State<SellerOrderScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: _tabs.length, vsync: this);
-    _repo = OrderRepository(ApiService());
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging) _loadOrders();
     });
-    _loadOrders();
-    _loadStats();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _repo = context.read<OrderRepository>();
+      final auth = context.read<AuthProvider>();
+      final role = auth.currentUser?.role;
+      if (role != 'farmer' && role != 'supplier') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Chỉ farmer/supplier mới quản lý đơn bán.'),
+          ),
+        );
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRouter.home,
+          (r) => false,
+        );
+        return;
+      }
+      _loadOrders();
+      _loadStats();
+    });
   }
 
   @override
@@ -122,18 +142,21 @@ class _SellerOrderScreenState extends State<SellerOrderScreen>
       }[s] ??
       s;
 
+  /// Happy-path seller pipeline for demo (skip optional logistics intermediate).
   String? _nextStatus(String current) => const {
-        'pending':   'confirmed',
+        'pending': 'confirmed',
         'confirmed': 'preparing',
         'preparing': 'shipping',
-        'shipping':  'delivered',
+        'handed_to_logistics': 'shipping',
+        'shipping': 'delivered',
       }[current];
 
   String _nextLabel(String current) => const {
-        'pending':   'Xác nhận đơn',
+        'pending': 'Xác nhận đơn',
         'confirmed': 'Bắt đầu chuẩn bị',
-        'preparing': 'Giao cho shipper',
-        'shipping':  'Đã giao hàng',
+        'preparing': 'Bàn giao / đang giao',
+        'handed_to_logistics': 'Đang giao hàng',
+        'shipping': 'Đã giao hàng',
       }[current] ??
       'Cập nhật';
 

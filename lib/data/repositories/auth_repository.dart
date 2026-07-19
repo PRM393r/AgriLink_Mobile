@@ -133,13 +133,40 @@ class AuthRepository {
   }
 
   // ── PUT /users/me/role ───────────────────────────────────────────────────
+  /// Updates role and **replaces JWT** so authorize('farmer'|'supplier') works.
   Future<UserModel> updateRole(String role) async {
     try {
-      await _apiService.put(ApiConstants.updateRole, data: {'role': role});
-      return getMe();
+      final response = await _apiService.put(
+        ApiConstants.updateRole,
+        data: {'role': role},
+      );
+      final envelope = response.data as Map<String, dynamic>?;
+      final data = envelope?['data'] as Map<String, dynamic>?;
+
+      // BE returns new tokens after role change (required for product CRUD, etc.)
+      final accessToken = data?['accessToken'] as String? ?? '';
+      final refreshToken = data?['refreshToken'] as String? ?? '';
+      if (accessToken.isNotEmpty) {
+        await TokenStorage.saveToken(accessToken);
+      }
+      if (refreshToken.isNotEmpty) {
+        await TokenStorage.saveRefreshToken(refreshToken);
+      }
+
+      // Prefer full profile from getMe; fallback to embedded user
+      try {
+        return await getMe();
+      } catch (_) {
+        final userJson = data?['user'] as Map<String, dynamic>?;
+        if (userJson != null) {
+          return UserModel.fromJson(userJson);
+        }
+        throw Exception('Cập nhật vai trò thất bại');
+      }
     } on DioException catch (e) {
       throw Exception(e.error ?? 'Cập nhật vai trò thất bại');
-    } catch (_) {
+    } catch (e) {
+      if (e is Exception) rethrow;
       throw Exception('Cập nhật vai trò thất bại');
     }
   }

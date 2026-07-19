@@ -45,9 +45,10 @@ Luồng demo:
 - **COD** — tạo đơn xong là success  
 - **Chuyển khoản / QR** — màn Payment QR; bấm xác nhận **luôn thành công** (best-effort gọi BE `payment-confirm`, lỗi API vẫn cho qua)
 
-## Demo
+## Demo & testing
 
-Xem **[DEMO_SCRIPT.md](./DEMO_SCRIPT.md)** — kịch bản 5–8 phút + checklist DoD.
+- **[DEMO_SCRIPT.md](./DEMO_SCRIPT.md)** — kịch bản demo 5–8 phút  
+- **[INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md)** — checklist interaction/integration test **toàn luồng**
 
 Trace seed: `AGL-TOMATO-001`, `AGL-DURIAN-001`.
 

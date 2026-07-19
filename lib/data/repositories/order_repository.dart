@@ -152,6 +152,34 @@ class OrderRepository {
     }
   }
 
+  // Tạo payment link PayOS cho 1 order (paymentMethod=payos). Trả về checkoutUrl để mở trình duyệt/WebView.
+  Future<Map<String, dynamic>> createPayosPaymentLink(String orderId) async {
+    try {
+      final response = await _apiService.post('/payments/payos/orders/$orderId');
+      final data = response.data;
+      if (data is Map<String, dynamic> && data['data'] is Map) {
+        return Map<String, dynamic>.from(data['data'] as Map);
+      }
+      throw Exception('Không tạo được liên kết thanh toán PayOS');
+    } on DioException catch (e) {
+      throw Exception(e.error ?? 'Không tạo được liên kết thanh toán PayOS');
+    }
+  }
+
+  // Poll trạng thái thanh toán sau khi buyer quay lại app từ trình duyệt PayOS.
+  Future<String> getPayosPaymentStatus(String orderId) async {
+    try {
+      final response = await _apiService.get('/payments/payos/orders/$orderId/status');
+      final data = response.data;
+      if (data is Map<String, dynamic> && data['data'] is Map) {
+        return (data['data']['paymentStatus'] as String?) ?? 'unpaid';
+      }
+      return 'unpaid';
+    } on DioException catch (e) {
+      throw Exception(e.error ?? 'Không kiểm tra được trạng thái thanh toán');
+    }
+  }
+
   Future<List<Map<String, dynamic>>> getMonthlyRevenue({String type = 'monthly'}) async {
     try {
       final response = await _apiService.get(

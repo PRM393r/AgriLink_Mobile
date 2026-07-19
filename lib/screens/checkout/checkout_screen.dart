@@ -246,8 +246,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   _PaymentOption(
                     value: 'bank_transfer',
                     groupValue: _paymentMethod,
-                    label: 'Chuyển khoản ngân hàng',
+                    label: 'Chuyển khoản ngân hàng (quét QR thủ công)',
                     icon: Icons.account_balance_outlined,
+                    onChanged: (v) => setState(() => _paymentMethod = v!),
+                  ),
+                  _PaymentOption(
+                    value: 'payos',
+                    groupValue: _paymentMethod,
+                    label: 'Thanh toán online qua PayOS',
+                    icon: Icons.qr_code_2_outlined,
                     onChanged: (v) => setState(() => _paymentMethod = v!),
                   ),
                 ],
@@ -395,6 +402,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         Navigator.pushReplacementNamed(
           context,
           AppRouter.orderSuccess,
+          arguments: orders,
+        );
+      } else if (_paymentMethod == 'payos') {
+        Navigator.pushReplacementNamed(
+          context,
+          AppRouter.paymentPayos,
           arguments: orders,
         );
       } else {

@@ -71,13 +71,18 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
       code: code,
       onSuccess: () {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Xác thực email thành công!')),
+          const SnackBar(
+            content: Text(
+              'Xác thực email thành công! Đăng nhập để chọn vai trò.',
+            ),
+          ),
         );
-        // Sau verify → đến login để nhận token
+        // Sau verify → Login (prefill email) để nhận JWT rồi RolePicker
         Navigator.pushNamedAndRemoveUntil(
           context,
           AppRouter.login,
           (route) => false,
+          arguments: _email,
         );
       },
       onError: (err) {

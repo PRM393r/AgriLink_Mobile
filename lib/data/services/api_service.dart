@@ -107,38 +107,8 @@ class ApiService {
     return newAccess;
   }
 
-  Future<String> syncUser(String idToken) async {
-    try {
-      final response = await _dio.post<Map<String, dynamic>>(
-        '/auth/sync',
-        options: Options(headers: {'Authorization': 'Bearer $idToken'}),
-      );
-
-      final envelope = response.data;
-      final data = envelope?['data'];
-      if (data is Map<String, dynamic>) {
-        final accessToken = data['accessToken'] as String? ?? '';
-        final refreshToken = data['refreshToken'] as String? ?? '';
-        if (accessToken.isNotEmpty) {
-          await TokenStorage.saveToken(accessToken);
-        }
-        if (refreshToken.isNotEmpty) {
-          await TokenStorage.saveRefreshToken(refreshToken);
-        }
-        return accessToken;
-      }
-
-      throw Exception('Định dạng phản hồi đồng bộ tài khoản không hợp lệ');
-    } on DioException {
-      rethrow;
-    } catch (e) {
-      throw DioException(
-        requestOptions: RequestOptions(path: '/auth/sync'),
-        error: e.toString(),
-      );
-    }
-  }
-
+  // Firebase Phone /auth/sync was removed from the product auth path
+  // (email + password + email OTP). Backend endpoint may still exist as legacy.
 
   String _readableErrorMessage(DioException e) {
     if (e.response != null && e.response?.data != null) {

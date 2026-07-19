@@ -16,6 +16,7 @@ import '../orders/seller_order_screen.dart';
 import '../profile/profile_screen.dart';
 import '../dashboard/farmer/my_products_screen.dart';
 import '../../data/providers/notification_provider.dart';
+import '../../router/app_router.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -33,12 +34,23 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _pageController = PageController(initialPage: _currentIndex);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        context.read<WishlistProvider>().fetchWishlistIds();
-        final notifications = context.read<NotificationProvider>();
-        notifications.reset();
-        notifications.fetchNotifications(force: true);
+      if (!mounted) return;
+
+      final auth = context.read<AuthProvider>();
+      // Guard: never render a role dashboard without a valid role.
+      if (auth.needsRoleSelection) {
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRouter.rolePicker,
+          (route) => false,
+        );
+        return;
       }
+
+      context.read<WishlistProvider>().fetchWishlistIds();
+      final notifications = context.read<NotificationProvider>();
+      notifications.reset();
+      notifications.fetchNotifications(force: true);
     });
   }
 
@@ -52,9 +64,16 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
     final cartProvider = Provider.of<CartProvider>(context);
+    final user = authProvider.currentUser;
 
-    // Default to 'customer' if role is not set
-    final role = authProvider.currentUser?.role ?? 'customer';
+    // While redirecting to RolePicker, show a light placeholder.
+    if (user == null || !user.isValidRole) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final role = user.role;
 
     // Build lists of screens and nav items based on role
     final List<Widget> screens = [];

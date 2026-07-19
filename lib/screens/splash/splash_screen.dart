@@ -95,13 +95,20 @@ class _SplashScreenState extends State<SplashScreen>
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final isLoggedIn = await authProvider.checkLogin();
 
-    if (mounted) {
-      if (isLoggedIn) {
-        Navigator.pushReplacementNamed(context, AppRouter.home);
-      } else {
-        Navigator.pushReplacementNamed(context, AppRouter.login);
-      }
+    if (!mounted) return;
+
+    if (!isLoggedIn) {
+      Navigator.pushReplacementNamed(context, AppRouter.login);
+      return;
     }
+
+    // Logged in but missing role → force role selection before Home.
+    if (authProvider.needsRoleSelection) {
+      Navigator.pushReplacementNamed(context, AppRouter.rolePicker);
+      return;
+    }
+
+    Navigator.pushReplacementNamed(context, AppRouter.home);
   }
 
   @override

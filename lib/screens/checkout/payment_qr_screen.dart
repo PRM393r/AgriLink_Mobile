@@ -7,7 +7,7 @@ import '../../core/constants/app_text_styles.dart';
 import '../../data/models/order_model.dart';
 import '../../data/providers/notification_provider.dart';
 import '../../data/repositories/order_repository.dart';
-import '../../data/services/api_service.dart';
+import '../../data/services/payment_service.dart';
 import '../../router/app_router.dart';
 import '../../widgets/common/agri_button.dart';
 
@@ -28,10 +28,11 @@ class _PaymentQrScreenState extends State<PaymentQrScreen> {
 
   Map<String, dynamic> get _recipient =>
       _order.paymentRecipient ?? const {};
-  String get _bankCode => _recipient['bankCode'] as String? ?? '';
+  String get _bankCode => _recipient['bankCode'] as String? ?? 'VCB';
   String get _accountNumber =>
-      _recipient['accountNumber'] as String? ?? '';
-  String get _accountName => _recipient['accountName'] as String? ?? '';
+      _recipient['accountNumber'] as String? ?? '0123456789';
+  String get _accountName =>
+      _recipient['accountName'] as String? ?? 'AGRILINK DEMO';
 
   String get _vietQrUrl => Uri.https(
         'img.vietqr.io',
@@ -43,33 +44,62 @@ class _PaymentQrScreenState extends State<PaymentQrScreen> {
         },
       ).toString();
 
+  /// Demo policy: payment always completes successfully for the user.
+  /// Best-effort call to BE `payment-confirm`; API errors are ignored.
   Future<void> _confirmPayment() async {
     if (_isConfirming) return;
     setState(() => _isConfirming = true);
+    final orderRepo = context.read<OrderRepository>();
+    final notifications = context.read<NotificationProvider>();
+    final orderId = _order.id;
+    final amount = _order.totalAmount;
+    final method = _order.paymentMethod ?? 'bank_transfer';
+
     try {
-      await OrderRepository(ApiService()).confirmPayment(_order.id);
+      await PaymentService.processPayment(
+        orderId: orderId,
+        amount: amount,
+        method: method,
+      );
+
+      try {
+        await orderRepo.confirmPayment(orderId);
+      } catch (e) {
+        // Demo: still proceed so student demos never block on payment gateway/API.
+        debugPrint('Demo payment-confirm fallback (ignored): $e');
+      }
+
       if (!mounted) return;
-      await context.read<NotificationProvider>().refresh();
+      try {
+        await notifications.refresh();
+      } catch (_) {}
+
       if (_currentIndex < widget.orders.length - 1) {
         setState(() {
           _currentIndex++;
           _isConfirming = false;
         });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Demo: thanh toán đơn này thành công. Tiếp đơn sau.'),
+            ),
+          );
+        }
         return;
       }
-      if (mounted) {
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          AppRouter.orderSuccess,
-          (route) => route.settings.name == AppRouter.home,
-        );
-      }
-    } catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error.toString().replaceFirst('Exception:', '').trim())),
-        );
-      }
+
+      if (!mounted) return;
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        AppRouter.home,
+        (route) => false,
+      );
+      Navigator.pushNamed(
+        context,
+        AppRouter.orderSuccess,
+        arguments: widget.orders,
+      );
     } finally {
       if (mounted) setState(() => _isConfirming = false);
     }
@@ -79,10 +109,32 @@ class _PaymentQrScreenState extends State<PaymentQrScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.surfaceSoft,
-      appBar: AppBar(title: const Text('Chuyển khoản ngân hàng')),
+      appBar: AppBar(title: const Text('Chuyển khoản (Demo)')),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
+          Container(
+            padding: const EdgeInsets.all(14),
+            margin: const EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(
+              color: AppColors.primaryUltraLight,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.info_outline, color: AppColors.primary, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    PaymentService.getDemoBannerText(),
+                    style: AppTextStyles.caption.copyWith(color: AppColors.body),
+                  ),
+                ),
+              ],
+            ),
+          ),
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
@@ -149,17 +201,21 @@ class _PaymentQrScreenState extends State<PaymentQrScreen> {
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(color: AppColors.warningLight, borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(
+              color: AppColors.warningLight,
+              borderRadius: BorderRadius.circular(12),
+            ),
             child: Text(
-              'Sau khi quét QR, nhập đúng số tiền và nội dung chuyển khoản là mã đơn hàng. Hoàn tất giao dịch rồi bấm nút bên dưới.',
+              'Demo: bạn có thể bỏ qua quét QR thật. Bấm nút bên dưới để '
+              'đánh dấu đã thanh toán (luôn thành công).',
               style: AppTextStyles.caption.copyWith(color: AppColors.body),
             ),
           ),
           const SizedBox(height: 20),
           AgriButton(
             text: _currentIndex < widget.orders.length - 1
-                ? 'Đã thanh toán, sang đơn tiếp theo'
-                : 'Tôi đã thanh toán',
+                ? 'Xác nhận demo — sang đơn tiếp'
+                : 'Xác nhận thanh toán demo (thành công)',
             isLoading: _isConfirming,
             onPressed: _isConfirming ? null : _confirmPayment,
           ),

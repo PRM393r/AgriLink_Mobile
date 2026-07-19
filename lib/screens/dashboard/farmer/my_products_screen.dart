@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_text_styles.dart';
 import '../../../data/models/product_model.dart';
 import '../../../data/services/product_service.dart';
 import '../../../widgets/common/loading_overlay.dart';
@@ -20,6 +19,7 @@ class MyProductsScreen extends StatefulWidget {
 class _MyProductsScreenState extends State<MyProductsScreen> {
   bool _isLoading = true;
   List<ProductModel> _products = [];
+  String? _error;
 
   @override
   void initState() {
@@ -28,22 +28,28 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
   }
 
   Future<void> _fetchMyProducts() async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
     try {
       final productService = context.read<ProductService>();
       final products = await productService.fetchMyProducts();
+      if (!mounted) return;
       setState(() {
         _products = products;
       });
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString().replaceAll('Exception: ', '')),
-            backgroundColor: AppColors.error,
-          ),
-        );
-      }
+      if (!mounted) return;
+      setState(() {
+        _error = e.toString().replaceAll('Exception: ', '');
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_error ?? 'Lỗi tải sản phẩm'),
+          backgroundColor: AppColors.error,
+        ),
+      );
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -112,13 +118,27 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
           ),
         ],
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _navigateToForm(),
+        backgroundColor: AppColors.primary,
+        icon: const Icon(Icons.add),
+        label: const Text('Thêm SP'),
+      ),
       body: LoadingOverlay(
         isLoading: _isLoading,
-        child: _products.isEmpty && !_isLoading
+        child: _error != null && _products.isEmpty && !_isLoading
+            ? EmptyState(
+                icon: Icons.wifi_off_rounded,
+                title: 'Không tải được sản phẩm',
+                message: _error!,
+                actionLabel: 'Thử lại',
+                onActionPressed: _fetchMyProducts,
+              )
+            : _products.isEmpty && !_isLoading
             ? EmptyState(
                 icon: Icons.inventory_2_outlined,
                 title: 'Chưa có sản phẩm',
-                message: 'Bạn chưa đăng bán sản phẩm nào.',
+                message: 'Bạn chưa đăng bán sản phẩm nào. Thêm SP để khách hàng đặt hàng.',
                 actionLabel: 'Thêm sản phẩm ngay',
                 onActionPressed: () => _navigateToForm(),
               )

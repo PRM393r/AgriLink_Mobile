@@ -37,6 +37,14 @@ flutter run -d chrome
 flutter run
 ```
 
+## Payment (demo only)
+
+Payment **không** integrate cổng production (VNPay/PayOS).  
+Luồng demo:
+
+- **COD** — tạo đơn xong là success  
+- **Chuyển khoản / QR** — màn Payment QR; bấm xác nhận **luôn thành công** (best-effort gọi BE `payment-confirm`, lỗi API vẫn cho qua)
+
 ## Tests
 
 ```bash

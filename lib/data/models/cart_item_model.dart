@@ -45,12 +45,19 @@ class CartItem {
   }
 
   factory CartItem.fromJson(Map<String, dynamic> json) {
+    final qtyRaw = json['quantity'];
+    final quantity = qtyRaw is int
+        ? qtyRaw
+        : qtyRaw is num
+            ? qtyRaw.toInt()
+            : int.tryParse('$qtyRaw') ?? 0;
+
     return CartItem(
-      productId: json['productId'] as String,
-      productName: json['productName'] as String,
-      price: (json['price'] as num).toDouble(),
-      unit: json['unit'] as String,
-      quantity: json['quantity'] as int,
+      productId: json['productId']?.toString() ?? '',
+      productName: json['productName']?.toString() ?? '',
+      price: (json['price'] as num?)?.toDouble() ?? 0.0,
+      unit: json['unit']?.toString() ?? '',
+      quantity: quantity,
       imageUrl: json['imageUrl'] as String?,
     );
   }

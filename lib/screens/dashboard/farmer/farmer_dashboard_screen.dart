@@ -1,17 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:fl_chart/fl_chart.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_text_styles.dart';
+import '../../../core/constants/app_shadows.dart';
 import '../../../data/models/product_model.dart';
-import '../../../data/models/order_model.dart';
-import '../../../data/repositories/product_repository.dart';
-import '../../../data/repositories/order_repository.dart';
-import '../../../data/services/api_service.dart';
 import '../../../data/services/auth_provider.dart';
-import '../../../widgets/common/agri_card.dart';
+import '../../../router/app_router.dart';
 import '../../../widgets/common/agri_button.dart';
-import 'add_product_screen.dart';
+import '../../../widgets/common/stat_card.dart';
+import '../../../widgets/common/animated_list_item.dart';
+import '../../../widgets/notification/notification_badge.dart';
+import '../../../data/models/order_model.dart';
+import '../../../data/services/product_service.dart';
+import '../../../data/services/order_service.dart';
+import '../../../core/utils/currency_formatter.dart';
+import 'product_form_screen.dart';
 
 class FarmerDashboardScreen extends StatefulWidget {
   const FarmerDashboardScreen({super.key});
@@ -21,375 +25,605 @@ class FarmerDashboardScreen extends StatefulWidget {
 }
 
 class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
-  late final ProductRepository _productRepo;
-  late final OrderRepository _orderRepo;
-
-  List<ProductModel> _products = [];
+  List<ProductModel> _myProducts = [];
   List<OrderModel> _orders = [];
-  bool _loading = true;
+  Map<String, dynamic> _stats = {
+    'totalRevenue': 0,
+    'totalOrders': 0,
+    'pendingOrders': 0,
+    'totalProducts': 0
+  };
+  List<Map<String, dynamic>> _chartData = [];
+  double _maxRevenue = 0;
+  bool _isLoading = true;
+  bool _isChartLoading = false;
+  String _chartType = 'monthly';
 
   @override
   void initState() {
     super.initState();
-    _productRepo = ProductRepository(ApiService());
-    _orderRepo = OrderRepository(ApiService());
-    _load();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fetchData();
+      _fetchChartData();
+    });
   }
 
-  Future<void> _load() async {
-    setState(() => _loading = true);
+  Future<void> _fetchData() async {
     try {
-      final results = await Future.wait([
-        _productRepo.getProducts(sortBy: 'createdAt', order: 'desc', limit: 10),
-        _orderRepo.getSellerOrders(status: 'pending'),
-      ]);
-      setState(() {
-        _products = results[0] as List<ProductModel>;
-        _orders = results[1] as List<OrderModel>;
-        _loading = false;
-      });
-    } catch (_) {
-      setState(() => _loading = false);
+      final productService = context.read<ProductService>();
+      final orderService = context.read<OrderService>();
+
+      final stats = await orderService.getSellerStats();
+      final products = await productService.fetchMyProducts();
+      final orders = await orderService.getSellerOrders(status: 'pending');
+
+      if (mounted) {
+        setState(() {
+          _stats = stats;
+          _myProducts = products.take(10).toList(); // Show up to 10 but scrollable
+          _orders = orders;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi tải dữ liệu: $e')));
+      }
     }
   }
 
-  Future<void> _updateOrderStatus(OrderModel order) async {
-    final statuses = [
-      {'value': 'confirmed', 'label': 'Xác nhận'},
-      {'value': 'preparing', 'label': 'Đang chuẩn bị'},
-      {'value': 'shipping', 'label': 'Đang giao'},
-      {'value': 'delivered', 'label': 'Hoàn thành'},
-      {'value': 'cancelled', 'label': 'Hủy đơn'},
-    ];
+  Future<void> _fetchChartData() async {
+    if (!mounted) return;
+    setState(() => _isChartLoading = true);
+    try {
+      final orderService = context.read<OrderService>();
+      final revenueData = await orderService.getMonthlyRevenue(type: _chartType);
+      
+      double maxRev = 0;
+      for (var item in revenueData) {
+        final revenue = (item['revenue'] as num).toDouble();
+        if (revenue > maxRev) maxRev = revenue;
+      }
 
-    await showDialog(
+      if (mounted) {
+        setState(() {
+          _chartData = revenueData;
+          _maxRevenue = maxRev;
+          _isChartLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isChartLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi tải biểu đồ: $e')));
+      }
+    }
+  }
+
+  void _updateOrderStatus(int index) async {
+    final order = _orders[index];
+    final String? newStatus = await showDialog<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Cập nhật trạng thái đơn hàng'),
+      builder: (context) => AlertDialog(
+        title: const Text('Cập nhật trạng thái'),
         content: const Text('Chọn trạng thái mới:'),
-        actions: statuses.map((s) {
-          return TextButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              try {
-                await _orderRepo.updateOrderStatus(order.id, s['value']!);
-                _load();
-              } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(e.toString()), backgroundColor: AppColors.error),
-                  );
-                }
-              }
-            },
-            child: Text(
-              s['label']!,
-              style: TextStyle(
-                color: s['value'] == 'cancelled' ? AppColors.error : AppColors.primary,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          );
-        }).toList(),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'preparing'),
+            child: const Text('Đang xử lý'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'delivered'),
+            child: Text('Hoàn thành', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'cancelled'),
+            child: const Text('Hủy đơn', style: TextStyle(color: AppColors.error)),
+          ),
+        ],
       ),
     );
+
+    if (newStatus != null && mounted) {
+      try {
+        final orderService = context.read<OrderService>();
+        await orderService.updateOrderStatus(order.id, newStatus);
+        _fetchData();
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cập nhật thành công')));
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
-    final user = authProvider.currentUser;
+    final auth = Provider.of<AuthProvider>(context);
+    final user = auth.currentUser;
+    final displayName = user?.fullName ?? user?.phone ?? 'Nông dân';
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Tổng quan Nông dân'),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.ink),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: AppColors.ink),
-            onPressed: _load,
+      backgroundColor: AppColors.surfaceElevated,
+      body: CustomScrollView(
+        slivers: [
+          // ── Gradient Header ──
+          SliverToBoxAdapter(
+            child: Container(
+              padding: EdgeInsets.fromLTRB(
+                  20, MediaQuery.of(context).padding.top + 16, 20, 24),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF1B4332), Color(0xFF2D6A4F), Color(0xFF40916C)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Xin chào, 👋',
+                            style: AppTextStyles.subtitle.copyWith(
+                                color: AppColors.canvas.withValues(alpha: 0.8))),
+                        const SizedBox(height: 4),
+                        Text(displayName,
+                            style: AppTextStyles.sectionTitle.copyWith(
+                                color: AppColors.canvas, fontSize: 22),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.canvas.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const NotificationBadge(
+                      iconColor: AppColors.canvas,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundColor: AppColors.canvas.withValues(alpha: 0.2),
+                    child: const Icon(Icons.person_rounded, color: AppColors.canvas),
+                  ),
+                ],
+              ),
+            ),
           ),
-        ],
-      ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
-          : RefreshIndicator(
-              onRefresh: _load,
-              color: AppColors.primary,
-              child: Container(
-                color: AppColors.surfaceSoft,
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Greeting
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '${AppStrings.welcome},',
-                                style: AppTextStyles.caption.copyWith(color: AppColors.muted),
-                              ),
-                              Text(
-                                user?.fullName ?? user?.email ?? 'Nông dân',
-                                style: AppTextStyles.sectionTitle.copyWith(fontSize: 22),
-                              ),
-                            ],
-                          ),
-                          const CircleAvatar(
-                            backgroundColor: AppColors.primaryUltraLight,
-                            radius: 24,
-                            child: Icon(Icons.person, color: AppColors.primary),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
 
-                      // Stats
-                      Text('Thống kê tổng quan',
-                          style: AppTextStyles.sectionTitle.copyWith(fontSize: 16)),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildStatCard(
-                                'Sản phẩm', '${_products.length}', AppColors.primary),
+          // ── Stats ──
+          if (_isLoading)
+            const SliverToBoxAdapter(
+              child: Center(child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator())),
+            )
+          else
+            SliverToBoxAdapter(
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: StatCard(
+                            label: 'Sản phẩm',
+                            value: '${_stats['totalProducts']}',
+                            icon: Icons.eco_rounded,
+                            gradientColors: AppColors.freshGradient,
                           ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _buildStatCard(
-                                'Đơn chờ', '${_orders.length}', AppColors.accent),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: StatCard(
+                            label: 'Đơn mới',
+                            value: '${_stats['pendingOrders']}',
+                            icon: Icons.receipt_long_rounded,
+                            gradientColors: AppColors.warmGradient,
                           ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _buildStatCard('Đang bán',
-                                '${_products.where((p) => p.status == 'active').length}',
-                                AppColors.harvest),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: StatCard(
+                            label: 'Doanh thu',
+                            value: CurrencyFormatter.formatShortForm(_stats['totalRevenue']),
+                            icon: Icons.trending_up_rounded,
+                            gradientColors: AppColors.sunsetGradient,
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-
-                      // My products
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text('Sản phẩm của tôi', style: AppTextStyles.sectionTitle),
-                          TextButton(
-                            onPressed: _load,
-                            child: Text('Làm mới',
-                                style: TextStyle(
-                                    color: AppColors.primary, fontWeight: FontWeight.bold)),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-
-                      _products.isEmpty
-                          ? AgriCard(
-                              child: const Center(
-                                child: Padding(
-                                  padding: EdgeInsets.all(16),
-                                  child: Text('Chưa có sản phẩm nào',
-                                      style: TextStyle(color: AppColors.muted)),
-                                ),
-                              ),
-                            )
-                          : AgriCard(
-                              child: Column(
-                                children: _products.asMap().entries.map((entry) {
-                                  final i = entry.key;
-                                  final p = entry.value;
-                                  return Column(
-                                    children: [
-                                      _buildProductRow(
-                                        p.name,
-                                        '${_formatPrice(p.pricePerUnit)}đ/${p.unit}',
-                                        'Còn: ${p.availableQuantity.toStringAsFixed(0)} ${p.unit}',
-                                      ),
-                                      if (i < _products.length - 1) const Divider(),
-                                    ],
-                                  );
-                                }).toList(),
-                              ),
-                            ),
-                      const SizedBox(height: 16),
-
-                      AgriButton(
-                        text: 'Đăng bán nông sản mới',
-                        onPressed: () async {
-                          final added = await Navigator.push<bool>(
-                            context,
-                            MaterialPageRoute(builder: (_) => const AddProductScreen()),
-                          );
-                          if (added == true) _load();
-                        },
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Pending orders
-                      Text('Đơn hàng đang chờ xử lý', style: AppTextStyles.sectionTitle),
-                      const SizedBox(height: 12),
-
-                      if (_orders.isEmpty)
-                        AgriCard(
-                          child: const Center(
-                            child: Padding(
-                              padding: EdgeInsets.all(16),
-                              child: Text('Không có đơn hàng nào đang chờ',
-                                  style: TextStyle(color: AppColors.muted)),
-                            ),
-                          ),
-                        )
-                      else
-                        ..._orders.map((order) {
-                          final statusColor = _statusColor(order.status);
-                          return AgriCard(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            onTap: () => _updateOrderStatus(order),
-                            child: Row(
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  if (_chartData.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Container(
+                        padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
+                        decoration: BoxDecoration(
+                          color: AppColors.canvas,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: AppColors.surfaceDivider.withValues(alpha: 0.3)),
+                          boxShadow: AppShadows.card,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Text(
-                                            order.orderCode,
-                                            style: AppTextStyles.body
-                                                .copyWith(fontWeight: FontWeight.bold),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          _StatusChip(
-                                              label: order.statusLabel, color: statusColor),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 8),
-                                      if (order.items.isNotEmpty)
-                                        Text(
-                                          order.items.first.productSnapshot['name'] ?? '',
-                                          style: AppTextStyles.body.copyWith(color: AppColors.ink),
-                                        ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        '${order.items.length} sản phẩm',
-                                        style: AppTextStyles.caption
-                                            .copyWith(color: AppColors.muted),
-                                      ),
-                                    ],
-                                  ),
-                                ),
                                 Text(
-                                  '${_formatPrice(order.totalAmount)}đ',
-                                  style: AppTextStyles.body.copyWith(
-                                    color: AppColors.accentActive,
-                                    fontWeight: FontWeight.bold,
+                                  'Doanh thu',
+                                  style: AppTextStyles.subtitle.copyWith(fontWeight: FontWeight.bold),
+                                ),
+                                SegmentedButton<String>(
+                                  segments: const [
+                                    ButtonSegment<String>(
+                                      value: 'monthly',
+                                      label: Text('Năm'),
+                                    ),
+                                    ButtonSegment<String>(
+                                      value: 'daily',
+                                      label: Text('Tháng'),
+                                    ),
+                                  ],
+                                  selected: {_chartType},
+                                  onSelectionChanged: (Set<String> newSelection) {
+                                    if (_chartType == newSelection.first) return;
+                                    setState(() {
+                                      _chartType = newSelection.first;
+                                    });
+                                    _fetchChartData();
+                                  },
+                                  style: SegmentedButton.styleFrom(
+                                    visualDensity: const VisualDensity(horizontal: -2, vertical: -2),
+                                    textStyle: const TextStyle(fontSize: 12),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
                                   ),
                                 ),
                               ],
                             ),
-                          );
-                        }),
-                    ],
+                            const SizedBox(height: 24),
+                            AspectRatio(
+                              aspectRatio: 1.5,
+                              child: _isChartLoading 
+                                ? const Center(child: CircularProgressIndicator())
+                                : BarChart(
+                                    BarChartData(
+                                      alignment: BarChartAlignment.spaceAround,
+                                      maxY: _maxRevenue > 0 ? _maxRevenue * 1.2 : 100000,
+                                      barTouchData: BarTouchData(
+                                    enabled: true,
+                                    touchTooltipData: BarTouchTooltipData(
+                                      getTooltipColor: (_) => AppColors.ink.withValues(alpha: 0.8),
+                                      getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                                        final labelText = _chartType == 'monthly'
+                                            ? 'Tháng ${group.x.toInt()}'
+                                            : 'Ngày ${group.x.toInt()}';
+                                        return BarTooltipItem(
+                                          '$labelText\n',
+                                          const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                          children: <TextSpan>[
+                                            TextSpan(
+                                              text: CurrencyFormatter.format(rod.toY),
+                                              style: const TextStyle(
+                                                color: AppColors.primary,
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                  titlesData: FlTitlesData(
+                                    show: true,
+                                    bottomTitles: AxisTitles(
+                                      sideTitles: SideTitles(
+                                        showTitles: true,
+                                        getTitlesWidget: (double value, TitleMeta meta) {
+                                          if (_chartType == 'daily') {
+                                            if (value % 5 != 0 && value != 1) {
+                                              return const SizedBox.shrink();
+                                            }
+                                            return Padding(
+                                              padding: const EdgeInsets.only(top: 8.0),
+                                              child: Text(
+                                                '${value.toInt()}',
+                                                style: const TextStyle(color: AppColors.muted, fontSize: 10),
+                                              ),
+                                            );
+                                          }
+                                          return Padding(
+                                            padding: const EdgeInsets.only(top: 8.0),
+                                            child: Text(
+                                              'T${value.toInt()}',
+                                              style: const TextStyle(color: AppColors.muted, fontSize: 12),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                    leftTitles: const AxisTitles(
+                                      sideTitles: SideTitles(showTitles: false),
+                                    ),
+                                    topTitles: const AxisTitles(
+                                      sideTitles: SideTitles(showTitles: false),
+                                    ),
+                                    rightTitles: const AxisTitles(
+                                      sideTitles: SideTitles(showTitles: false),
+                                    ),
+                                  ),
+                                  gridData: FlGridData(
+                                    show: true,
+                                    drawVerticalLine: false,
+                                    horizontalInterval: _maxRevenue > 0 ? _maxRevenue / 4 : 25000,
+                                    getDrawingHorizontalLine: (value) {
+                                      return FlLine(
+                                        color: AppColors.surfaceDivider.withValues(alpha: 0.5),
+                                        strokeWidth: 1,
+                                        dashArray: [5, 5],
+                                      );
+                                    },
+                                  ),
+                                  borderData: FlBorderData(show: false),
+                                  barGroups: _chartData.map((data) {
+                                    final label = data['label'] as int;
+                                    final revenue = (data['revenue'] as num).toDouble();
+                                    return BarChartGroupData(
+                                      x: label,
+                                      barRods: [
+                                        BarChartRodData(
+                                          toY: revenue,
+                                          color: AppColors.primary,
+                                          width: _chartType == 'daily' ? 4 : 12,
+                                          borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                                          backDrawRodData: BackgroundBarChartRodData(
+                                            show: true,
+                                            toY: _maxRevenue > 0 ? _maxRevenue * 1.2 : 100000,
+                                            color: AppColors.surfaceSoft,
+                                          ),
+                                        ),
+                                      ],
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 24),
+                ],
+              ),
+            ),
+
+          // ── Products header ──
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Sản phẩm của tôi',
+                      style: AppTextStyles.sectionTitle.copyWith(fontSize: 18)),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pushNamed(context, AppRouter.myProducts).then((_) => _fetchData());
+                    },
+                    child: Text('Xem tất cả',
+                        style: AppTextStyles.subtitle.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w600)),
                   ),
+                ],
+              ),
+            ),
+          ),
+
+          // ── Product list ──
+          if (!_isLoading)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.canvas,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.surfaceDivider.withValues(alpha: 0.3)),
+                    boxShadow: AppShadows.card,
+                  ),
+                  child: _myProducts.isEmpty
+                      ? const Padding(
+                          padding: EdgeInsets.all(24.0),
+                          child: Center(child: Text('Chưa có sản phẩm nào')),
+                        )
+                      : ConstrainedBox(
+                          constraints: const BoxConstraints(maxHeight: 260),
+                          child: SingleChildScrollView(
+                            physics: const BouncingScrollPhysics(),
+                            child: Column(
+                              children: _myProducts.asMap().entries.map((e) {
+                            final p = e.value;
+                            final isLast = e.key == _myProducts.length - 1;
+                            return AnimatedListItem(
+                              index: e.key,
+                              child: InkWell(
+                                onTap: () {
+                                  Navigator.pushNamed(context, AppRouter.myProducts).then((_) => _fetchData());
+                                },
+                                child: Column(
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.all(14),
+                                    child: Row(
+                                      children: [
+                                        Container(
+                                          width: 44,
+                                          height: 44,
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(12),
+                                            color: AppColors.surfaceSoft,
+                                            image: p.primaryImageUrl != null
+                                                ? DecorationImage(
+                                                    image: NetworkImage(p.primaryImageUrl!),
+                                                    fit: BoxFit.cover)
+                                                : null,
+                                          ),
+                                          child: p.primaryImageUrl == null
+                                              ? const Center(child: Text('🌿', style: TextStyle(fontSize: 20)))
+                                              : null,
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(p.name,
+                                                  style: AppTextStyles.subtitle.copyWith(fontWeight: FontWeight.w600),
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis),
+                                              const SizedBox(height: 2),
+                                              Text('Có sẵn: ${p.availableQuantity} ${p.unit}', style: AppTextStyles.caption),
+                                            ],
+                                          ),
+                                        ),
+                                        Text(CurrencyFormatter.format(p.pricePerUnit),
+                                            style: AppTextStyles.price.copyWith(fontSize: 14)),
+                                      ],
+                                    ),
+                                  ),
+                                  if (!isLast)
+                                    Divider(height: 1, indent: 70, color: AppColors.surfaceDivider.withValues(alpha: 0.3)),
+                                ],
+                              ),
+                            ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ),
                 ),
               ),
             ),
-    );
-  }
 
-  Color _statusColor(String status) {
-    switch (status) {
-      case 'pending': return AppColors.accent;
-      case 'confirmed': return AppColors.primaryLight;
-      case 'shipping': return const Color(0xFF2563EB);
-      case 'delivered': return AppColors.primary;
-      case 'cancelled': return AppColors.error;
-      default: return AppColors.muted;
-    }
-  }
-
-  String _formatPrice(double price) => price
-      .toStringAsFixed(0)
-      .replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.');
-
-  Widget _buildStatCard(String label, String value, Color color) {
-    return AgriCard(
-      margin: EdgeInsets.zero,
-      padding: const EdgeInsets.all(12),
-      color: Colors.white,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label,
-              style: AppTextStyles.caption
-                  .copyWith(color: AppColors.muted, fontSize: 11),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis),
-          const SizedBox(height: 8),
-          Text(value,
-              style: AppTextStyles.sectionTitle
-                  .copyWith(color: color, fontSize: 18, fontWeight: FontWeight.bold)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProductRow(String title, String price, String qty) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title,
-                    style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w600),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis),
-                const SizedBox(height: 4),
-                Text(qty,
-                    style: AppTextStyles.caption.copyWith(color: AppColors.muted)),
-              ],
+          // ── Add product button ──
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+              child: AgriButton.gradient(
+                text: 'Đăng bán nông sản mới',
+                icon: Icons.add_rounded,
+                onPressed: () async {
+                  final result = await Navigator.push(context, MaterialPageRoute(builder: (_) => const ProductFormScreen()));
+                  if (result == true) {
+                    _fetchData();
+                  }
+                }
+              ),
             ),
           ),
-          Text(price,
-              style: AppTextStyles.body
-                  .copyWith(color: AppColors.accentActive, fontWeight: FontWeight.bold)),
+
+          // ── Orders header ──
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 28, 20, 12),
+              child: Text('Đơn hàng chờ xử lý',
+                  style: AppTextStyles.sectionTitle.copyWith(fontSize: 18)),
+            ),
+          ),
+
+          // ── Order cards ──
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  final order = _orders[index];
+                  return AnimatedListItem(
+                    index: index,
+                    child: _buildOrderCard(order, index),
+                  );
+                },
+                childCount: _orders.length,
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
-}
 
-class _StatusChip extends StatelessWidget {
-  final String label;
-  final Color color;
+  Widget _buildOrderCard(OrderModel order, int index) {
+    final statusColor = order.isPending
+        ? AppColors.accent
+        : order.isActive
+            ? AppColors.info
+            : order.isDelivered
+                ? AppColors.success
+                : AppColors.error;
 
-  const _StatusChip({required this.label, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold),
+    return GestureDetector(
+      onTap: () => _updateOrderStatus(index),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.canvas,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.surfaceDivider.withValues(alpha: 0.3)),
+          boxShadow: AppShadows.card,
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(order.orderCode.isEmpty ? 'Đơn hàng mới' : order.orderCode,
+                          style: AppTextStyles.subtitle.copyWith(fontWeight: FontWeight.bold)),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: statusColor.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(order.statusLabel,
+                            style: AppTextStyles.badge.copyWith(color: statusColor, fontWeight: FontWeight.w600)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                      order.items.isNotEmpty ? order.items.first.productName : 'Sản phẩm',
+                      style: AppTextStyles.body.copyWith(color: AppColors.ink)),
+                  const SizedBox(height: 4),
+                  Text(
+                      'SL: ${order.items.fold<double>(0, (sum, i) => sum + i.quantity)} | Người mua: ${order.shippingAddressSnapshot?['recipientName'] ?? 'Khách'}',
+                      style: AppTextStyles.caption),
+                ],
+              ),
+            ),
+            Text(CurrencyFormatter.format(order.totalAmount),
+                style: AppTextStyles.price.copyWith(fontSize: 14)),
+          ],
+        ),
       ),
     );
   }

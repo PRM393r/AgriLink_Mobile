@@ -4,6 +4,7 @@ import '../../core/utils/token_storage.dart';
 
 class ApiService {
   late final Dio _dio;
+  Future<String?>? _refreshFuture;
 
   ApiService() {
     _dio = Dio(
@@ -28,33 +29,29 @@ class ApiService {
           }
           return handler.next(options);
         },
-        onError: (DioException e, handler) {
-          // Standardized format: Backend returns error array or string
-          String errorMessage = 'Đã xảy ra lỗi hệ thống';
-          if (e.response != null && e.response?.data != null) {
-            final data = e.response?.data;
-            if (data is Map<String, dynamic>) {
-              if (data['message'] is List) {
-                errorMessage = (data['message'] as List).join('\n');
-              } else if (data['message'] is String) {
-                errorMessage = data['message'] as String;
+        onError: (DioException e, handler) async {
+          if (await _canRetryWithRefreshToken(e)) {
+            try {
+              final newToken = await _refreshAccessToken();
+              if (newToken != null && newToken.isNotEmpty) {
+                final retryOptions = e.requestOptions;
+                retryOptions.headers['Authorization'] = 'Bearer $newToken';
+                retryOptions.extra['retriedAfterRefresh'] = true;
+
+                final retryResponse = await _dio.fetch<dynamic>(retryOptions);
+                return handler.resolve(retryResponse);
               }
-            }
-          } else {
-            if (e.type == DioExceptionType.connectionTimeout ||
-                e.type == DioExceptionType.receiveTimeout) {
-              errorMessage = 'Lỗi kết nối mạng: Quá thời gian chờ';
-            } else if (e.type == DioExceptionType.connectionError) {
-              errorMessage = 'Không thể kết nối đến máy chủ';
+            } catch (_) {
+              await TokenStorage.clearAll();
             }
           }
-          // Modify exception message for UI catch blocks
+
           return handler.next(
             DioException(
               requestOptions: e.requestOptions,
               response: e.response,
               type: e.type,
-              error: errorMessage,
+              error: _readableErrorMessage(e),
             ),
           );
         },
@@ -64,36 +61,76 @@ class ApiService {
 
   Dio get client => _dio;
 
-  /// Syncs a Firebase-authenticated mobile user with the NestJS backend.
-  ///
-  /// Real backend response is wrapped by ResponseInterceptor:
-  /// { statusCode, message, data: { accessToken }, timestamp }
-  Future<String> syncUser(String idToken) async {
-    try {
-      final response = await _dio.post<Map<String, dynamic>>(
-        ApiConstants.syncUser,
-        options: Options(headers: {'Authorization': 'Bearer $idToken'}),
-      );
+  Future<bool> _canRetryWithRefreshToken(DioException e) async {
+    if (e.response?.statusCode != 401) return false;
+    if (e.requestOptions.path == ApiConstants.refresh) return false;
+    if (e.requestOptions.extra['retriedAfterRefresh'] == true) return false;
 
-      final envelope = response.data;
-      final data = envelope?['data'];
+    final refreshToken = await TokenStorage.getRefreshToken();
+    return refreshToken != null && refreshToken.isNotEmpty;
+  }
+
+  Future<String?> _refreshAccessToken() {
+    _refreshFuture ??= _performRefreshAccessToken();
+    return _refreshFuture!.whenComplete(() => _refreshFuture = null);
+  }
+
+  Future<String?> _performRefreshAccessToken() async {
+    final refreshToken = await TokenStorage.getRefreshToken();
+    if (refreshToken == null || refreshToken.isEmpty) return null;
+
+    final refreshDio = Dio(
+      BaseOptions(
+        baseUrl: ApiConstants.baseUrl,
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 10),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      ),
+    );
+
+    final response = await refreshDio.post<Map<String, dynamic>>(
+      ApiConstants.refresh,
+      data: {'refreshToken': refreshToken},
+    );
+    final data = response.data?['data'] as Map<String, dynamic>?;
+    final newAccess = data?['accessToken'] as String? ?? '';
+    final newRefresh = data?['refreshToken'] as String? ?? '';
+
+    if (newAccess.isEmpty) return null;
+    await TokenStorage.saveToken(newAccess);
+    if (newRefresh.isNotEmpty) {
+      await TokenStorage.saveRefreshToken(newRefresh);
+    }
+    return newAccess;
+  }
+
+  // Firebase Phone /auth/sync was removed from the product auth path
+  // (email + password + email OTP). Backend endpoint may still exist as legacy.
+
+  String _readableErrorMessage(DioException e) {
+    if (e.response != null && e.response?.data != null) {
+      final data = e.response?.data;
       if (data is Map<String, dynamic>) {
-        final accessToken = data['accessToken'] as String? ?? '';
-        if (accessToken.isNotEmpty) {
-          await TokenStorage.saveToken(accessToken);
-          return accessToken;
+        if (data['message'] is List) {
+          return (data['message'] as List).join('\n');
+        }
+        if (data['message'] is String) {
+          return data['message'] as String;
         }
       }
-
-      throw Exception('Định dạng phản hồi đồng bộ tài khoản không hợp lệ');
-    } on DioException {
-      rethrow;
-    } catch (e) {
-      throw DioException(
-        requestOptions: RequestOptions(path: ApiConstants.syncUser),
-        error: e.toString(),
-      );
     }
+
+    if (e.type == DioExceptionType.connectionTimeout ||
+        e.type == DioExceptionType.receiveTimeout) {
+      return 'Lỗi kết nối mạng: Quá thời gian chờ';
+    }
+    if (e.type == DioExceptionType.connectionError) {
+      return 'Không thể kết nối đến máy chủ';
+    }
+    return 'Đã xảy ra lỗi hệ thống';
   }
 
   // Generic helpers for REST API calls

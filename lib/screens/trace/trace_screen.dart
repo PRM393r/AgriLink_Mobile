@@ -1,86 +1,125 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
+import '../../data/providers/trace_provider.dart';
+import '../../router/app_router.dart';
 import '../../widgets/common/agri_button.dart';
 
-class TraceScreen extends StatelessWidget {
+class TraceScreen extends StatefulWidget {
   const TraceScreen({super.key});
 
   @override
+  State<TraceScreen> createState() => _TraceScreenState();
+}
+
+class _TraceScreenState extends State<TraceScreen> {
+  final _codeController = TextEditingController();
+
+  @override
+  void dispose() {
+    _codeController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _lookup([String? scannedCode]) async {
+    final code = scannedCode ?? _codeController.text;
+    if (scannedCode != null) _codeController.text = scannedCode;
+    final found = await context.read<TraceProvider>().lookup(code);
+    if (found && mounted) {
+      Navigator.pushNamed(context, AppRouter.traceDetail);
+    }
+  }
+
+  Future<void> _openScanner() async {
+    final code = await Navigator.pushNamed<String>(context, AppRouter.qrScanner);
+    if (code != null && mounted) await _lookup(code);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final provider = context.watch<TraceProvider>();
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Truy xuất nguồn gốc'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
+      backgroundColor: AppColors.surfaceSoft,
+      appBar: AppBar(title: const Text('Truy xuất nguồn gốc')),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text(
-              'Quét mã QR sản phẩm',
-              style: AppTextStyles.sectionTitle,
-              textAlign: TextAlign.center,
+            Container(
+              width: 132,
+              height: 132,
+              decoration: BoxDecoration(
+                color: AppColors.primaryUltraLight,
+                borderRadius: BorderRadius.circular(32),
+              ),
+              child: const Icon(Icons.qr_code_scanner_rounded, size: 78, color: AppColors.primary),
             ),
+            const SizedBox(height: 24),
+            Text('Kiểm tra hành trình sản phẩm', style: AppTextStyles.sectionTitle, textAlign: TextAlign.center),
             const SizedBox(height: 8),
             Text(
-              'Quét mã QR dán trên nhãn sản phẩm để xem thông tin nguồn gốc, nhật ký canh tác và nhà sản xuất.',
+              'Quét mã QR trên nhãn hoặc nhập mã để xem nơi sản xuất, chứng nhận và toàn bộ quá trình canh tác.',
               style: AppTextStyles.body.copyWith(color: AppColors.muted),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 48),
-            // Mock Scanner frame
-            Center(
-              child: Container(
-                width: 250,
-                height: 250,
-                decoration: BoxDecoration(
-                  border: Border.all(color: AppColors.primary, width: 4),
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: Stack(
-                    children: [
-                      Container(color: Colors.black87),
-                      Center(
-                        child: Icon(
-                          Icons.qr_code_scanner,
-                          size: 120,
-                          color: AppColors.primaryLight.withValues(alpha: 0.8),
-                        ),
-                      ),
-                      // Animated scanning red line
-                      Positioned(
-                        left: 0,
-                        right: 0,
-                        top: 120,
-                        child: Container(
-                          height: 2,
-                          decoration: BoxDecoration(
-                            color: AppColors.error,
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.error.withValues(alpha: 0.5),
-                                blurRadius: 8,
-                                spreadRadius: 2,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+            const SizedBox(height: 28),
+            TextField(
+              controller: _codeController,
+              textCapitalization: TextCapitalization.characters,
+              onSubmitted: (_) => _lookup(),
+              decoration: const InputDecoration(
+                labelText: 'Mã truy xuất',
+                hintText: 'Ví dụ: AGL-TOMATO-001',
+                prefixIcon: Icon(Icons.tag_rounded),
               ),
             ),
-            const SizedBox(height: 48),
+            if (provider.errorMessage != null) ...[
+              const SizedBox(height: 10),
+              Text(provider.errorMessage!, style: AppTextStyles.caption.copyWith(color: AppColors.error)),
+            ],
+            const SizedBox(height: 20),
             AgriButton(
-              text: 'Bắt đầu quét mã',
-              onPressed: () {
-                // Trigger scanner callback
-              },
+              text: provider.isLoading ? 'Đang tra cứu...' : 'Tra cứu mã',
+              onPressed: provider.isLoading ? null : _lookup,
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: provider.isLoading ? null : _openScanner,
+              icon: const Icon(Icons.qr_code_scanner_rounded),
+              label: const Text('Quét bằng camera'),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(52),
+                side: const BorderSide(color: AppColors.primary),
+                foregroundColor: AppColors.primary,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Mã demo (seed BE):',
+                style: AppTextStyles.caption.copyWith(fontWeight: FontWeight.w600),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final code in const ['AGL-TOMATO-001', 'AGL-DURIAN-001'])
+                  ActionChip(
+                    label: Text(code),
+                    avatar: const Icon(Icons.qr_code_2, size: 18),
+                    onPressed: provider.isLoading
+                        ? null
+                        : () {
+                            _codeController.text = code;
+                            _lookup(code);
+                          },
+                  ),
+              ],
             ),
           ],
         ),

@@ -16,6 +16,10 @@ class ProductModel {
   final List<String> images;
   final List<String> certifications;
   final String category;
+  final String? province;
+  final String? sellerName;
+
+  String? get primaryImageUrl => images.isNotEmpty ? images.first : null;
 
   const ProductModel({
     required this.id,
@@ -35,11 +39,13 @@ class ProductModel {
     required this.images,
     required this.certifications,
     required this.category,
+    this.province,
+    this.sellerName,
   });
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
     return ProductModel(
-      id: (json['_id'] ?? json['id']) as String? ?? '',
+      id: (json['_id'] ?? json['id'])?.toString() ?? '',
       name: json['name'] as String? ?? '',
       description: json['description'] as String? ?? '',
       pricePerUnit: (json['pricePerUnit'] as num?)?.toDouble() ?? 0.0,
@@ -48,14 +54,30 @@ class ProductModel {
       minOrderQuantity: (json['minOrderQuantity'] as num?)?.toDouble() ?? 1.0,
       farmingType: json['farmingType'] as String? ?? 'conventional',
       status: json['status'] as String? ?? 'active',
-      viewCount: json['viewCount'] as int? ?? 0,
+      viewCount: (json['viewCount'] as num?)?.toInt() ?? 0,
       harvestDate: json['harvestDate'] != null ? DateTime.tryParse(json['harvestDate'] as String) : null,
       expiryDate: json['expiryDate'] != null ? DateTime.tryParse(json['expiryDate'] as String) : null,
-      sellerId: json['sellerId'] as String? ?? '',
+      sellerId: json['sellerId'] is Map
+          ? ((json['sellerId'] as Map)['_id']?.toString() ?? '')
+          : (json['sellerId'] ?? json['seller_id'])?.toString() ?? '',
+      sellerName: json['sellerId'] is Map
+          ? (json['sellerId'] as Map)['fullName'] as String?
+          : json['sellerName'] as String?,
       sellerType: json['sellerType'] as String? ?? '',
-      images: (json['images'] as List<dynamic>?)?.map((e) => e as String).toList() ?? const [],
-      certifications: (json['certifications'] as List<dynamic>?)?.map((e) => e as String).toList() ?? const [],
-      category: json['category'] as String? ?? '',
+      images: (json['images'] as List<dynamic>?)
+              ?.map((e) => e is Map ? (e['url'] as String? ?? '') : e as String)
+              .where((url) => url.isNotEmpty)
+              .toList() ??
+          const [],
+      certifications: (json['certifications'] as List<dynamic>?)
+              ?.map((e) => e is Map ? (e['name'] as String? ?? '') : e as String)
+              .where((s) => s.isNotEmpty)
+              .toList() ??
+          const [],
+      category: json['category'] is Map
+          ? ((json['category'] as Map)['name'] as String? ?? '')
+          : (json['category'] as String? ?? ''),
+      province: json['province'] as String?,
     );
   }
 
@@ -75,8 +97,8 @@ class ProductModel {
       'expiryDate': expiryDate?.toIso8601String(),
       'sellerId': sellerId,
       'sellerType': sellerType,
-      'images': images,
-      'certifications': certifications,
+      'images': images.map((url) => {'url': url, 'isPrimary': false}).toList(),
+      'certifications': certifications.map((c) => {'name': c}).toList(),
       'category': category,
     };
   }

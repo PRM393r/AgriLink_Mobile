@@ -9,72 +9,204 @@ class AuthRepository {
 
   AuthRepository(this._apiService);
 
-  /// Standardized success response structure: { data: T }
-  /// Returns the UserModel and saves the backend JWT token.
-  Future<UserModel> loginWithOtp({
-    required String phone,
-    required String idToken,
+  // ── POST /auth/register ──────────────────────────────────────────────────
+  Future<void> register({
+    required String email,
+    required String password,
+    required String fullName,
+  }) async {
+    try {
+      await _apiService.post(
+        ApiConstants.register,
+        data: {'email': email, 'password': password, 'fullName': fullName},
+      );
+    } on DioException catch (e) {
+      throw Exception(e.error ?? 'Đăng ký thất bại');
+    } catch (_) {
+      throw Exception('Đăng ký thất bại');
+    }
+  }
+
+  // ── POST /auth/verify-email ──────────────────────────────────────────────
+  Future<void> verifyEmail({
+    required String email,
+    required String code,
+  }) async {
+    try {
+      await _apiService.post(
+        ApiConstants.verifyEmail,
+        data: {'email': email, 'code': code},
+      );
+    } on DioException catch (e) {
+      throw Exception(e.error ?? 'Xác thực email thất bại');
+    } catch (_) {
+      throw Exception('Lỗi xác thực');
+    }
+  }
+
+  // ── POST /auth/resend-otp ────────────────────────────────────────────────
+  Future<void> resendOtp(String email) async {
+    try {
+      await _apiService.post(ApiConstants.resendOtp, data: {'email': email});
+    } on DioException catch (e) {
+      throw Exception(e.error ?? 'Gửi lại OTP thất bại');
+    } catch (_) {
+      throw Exception('Gửi lại mã OTP thất bại');
+    }
+  }
+
+  // ── POST /auth/login ─────────────────────────────────────────────────────
+  Future<UserModel> login({
+    required String email,
+    required String password,
   }) async {
     try {
       final response = await _apiService.post(
-        ApiConstants.loginOtp,
-        data: {'phone': phone, 'idToken': idToken},
+        ApiConstants.login,
+        data: {'email': email, 'password': password},
       );
+      final envelope = response.data as Map<String, dynamic>?;
+      final data = envelope?['data'] as Map<String, dynamic>?;
+      if (data == null) throw Exception('Phản hồi không hợp lệ từ máy chủ');
 
-      final data = response.data;
-      if (data is Map<String, dynamic> && data['data'] != null) {
-        final innerData = data['data'] as Map<String, dynamic>;
-        final token = innerData['token'] as String? ?? '';
-        final userJson = innerData['user'] as Map<String, dynamic>? ?? {};
+      final accessToken = data['accessToken'] as String? ?? '';
+      final refreshToken = data['refreshToken'] as String? ?? '';
+      final userJson = data['user'] as Map<String, dynamic>? ?? {};
 
-        // Save token to secure storage
-        if (token.isNotEmpty) {
-          await TokenStorage.saveToken(token);
-        }
-
-        return UserModel.fromJson(userJson);
+      if (accessToken.isNotEmpty) {
+        await TokenStorage.saveToken(accessToken);
       }
-      throw Exception('Định dạng phản hồi không hợp lệ từ máy chủ');
+      if (refreshToken.isNotEmpty) {
+        await TokenStorage.saveRefreshToken(refreshToken);
+      }
+
+      return UserModel.fromJson(userJson);
     } on DioException catch (e) {
-      throw Exception(e.error ?? 'Đăng nhập OTP thất bại');
-    } catch (e) {
-      throw Exception('Đăng nhập thất bại: $e');
+      throw Exception(e.error ?? 'Đăng nhập thất bại');
+    } catch (_) {
+      throw Exception('Đăng nhập thất bại');
     }
   }
 
-  /// Fetches current user profile from PostgreSQL via NestJS backend.
+  // ── GET /users/me ────────────────────────────────────────────────────────
   Future<UserModel> getMe() async {
     try {
       final response = await _apiService.get(ApiConstants.getMe);
-      final data = response.data;
-      if (data is Map<String, dynamic> && data['data'] != null) {
-        return UserModel.fromJson(data['data'] as Map<String, dynamic>);
-      }
-      throw Exception('Định dạng phản hồi không hợp lệ');
+      final envelope = response.data as Map<String, dynamic>?;
+      final data = envelope?['data'] as Map<String, dynamic>?;
+      if (data == null) throw Exception('Phản hồi không hợp lệ');
+      return UserModel.fromJson(data);
     } on DioException catch (e) {
       throw Exception(e.error ?? 'Lấy thông tin tài khoản thất bại');
-    } catch (e) {
-      throw Exception('Lỗi lấy thông tin: $e');
+    } catch (_) {
+      throw Exception('Lấy thông tin tài khoản thất bại');
     }
   }
 
-  /// Updates the user's role on the NestJS backend.
+  // ── PATCH /users/me ──────────────────────────────────────────────────────
+  Future<UserModel> updateProfile({
+    String? fullName,
+    String? avatarUrl,
+    String? address,
+    Map<String, dynamic>? bankInfo,
+  }) async {
+    try {
+      final body = <String, dynamic>{};
+      if (fullName != null) body['fullName'] = fullName;
+      if (avatarUrl != null) body['avatarUrl'] = avatarUrl;
+      if (address != null) body['address'] = address;
+      if (bankInfo != null) body['bankInfo'] = bankInfo;
+
+      final response = await _apiService.patch(
+        ApiConstants.updateMe,
+        data: body,
+      );
+      final envelope = response.data as Map<String, dynamic>?;
+      final data = envelope?['data'] as Map<String, dynamic>?;
+      if (data == null) throw Exception('Cập nhật hồ sơ thất bại');
+      return UserModel.fromJson(data);
+    } on DioException catch (e) {
+      throw Exception(e.error ?? 'Cập nhật hồ sơ thất bại');
+    } catch (_) {
+      throw Exception('Cập nhật hồ sơ thất bại');
+    }
+  }
+
+  // ── PUT /users/me/role ───────────────────────────────────────────────────
+  /// Updates role and **replaces JWT** so authorize('farmer'|'supplier') works.
   Future<UserModel> updateRole(String role) async {
     try {
-      final backendRole = role == 'customer' ? 'buyer' : role;
       final response = await _apiService.put(
         ApiConstants.updateRole,
-        data: {'role': backendRole},
+        data: {'role': role},
       );
-      final data = response.data;
-      if (data is Map<String, dynamic> && data['data'] != null) {
-        return UserModel.fromJson(data['data'] as Map<String, dynamic>);
+      final envelope = response.data as Map<String, dynamic>?;
+      final data = envelope?['data'] as Map<String, dynamic>?;
+
+      // BE returns new tokens after role change (required for product CRUD, etc.)
+      final accessToken = data?['accessToken'] as String? ?? '';
+      final refreshToken = data?['refreshToken'] as String? ?? '';
+      if (accessToken.isNotEmpty) {
+        await TokenStorage.saveToken(accessToken);
       }
-      throw Exception('Cập nhật vai trò thất bại');
+      if (refreshToken.isNotEmpty) {
+        await TokenStorage.saveRefreshToken(refreshToken);
+      }
+
+      // Prefer full profile from getMe; fallback to embedded user
+      try {
+        return await getMe();
+      } catch (_) {
+        final userJson = data?['user'] as Map<String, dynamic>?;
+        if (userJson != null) {
+          return UserModel.fromJson(userJson);
+        }
+        throw Exception('Cập nhật vai trò thất bại');
+      }
     } on DioException catch (e) {
       throw Exception(e.error ?? 'Cập nhật vai trò thất bại');
     } catch (e) {
-      throw Exception('Lỗi cập nhật vai trò: $e');
+      if (e is Exception) rethrow;
+      throw Exception('Cập nhật vai trò thất bại');
+    }
+  }
+
+  // ── POST /auth/refresh ───────────────────────────────────────────────────
+  Future<String> refreshAccessToken() async {
+    try {
+      final refreshToken = await TokenStorage.getRefreshToken();
+      if (refreshToken == null) throw Exception('Không có refresh token');
+      final response = await _apiService.post(
+        ApiConstants.refresh,
+        data: {'refreshToken': refreshToken},
+      );
+      final envelope = response.data as Map<String, dynamic>?;
+      final data = envelope?['data'] as Map<String, dynamic>?;
+      final newAccess = data?['accessToken'] as String? ?? '';
+      final newRefresh = data?['refreshToken'] as String? ?? '';
+      if (newAccess.isNotEmpty) {
+        await TokenStorage.saveToken(newAccess);
+      }
+      if (newRefresh.isNotEmpty) {
+        await TokenStorage.saveRefreshToken(newRefresh);
+      }
+      return newAccess;
+    } on DioException catch (e) {
+      throw Exception(e.error ?? 'Làm mới token thất bại');
+    } catch (_) {
+      throw Exception('Làm mới token thất bại');
+    }
+  }
+
+  // ── POST /auth/logout ────────────────────────────────────────────────────
+  Future<void> logout() async {
+    try {
+      await _apiService.post(ApiConstants.logout);
+    } catch (_) {
+      // Luôn clear local dù BE lỗi
+    } finally {
+      await TokenStorage.deleteToken();
+      await TokenStorage.deleteRefreshToken();
     }
   }
 }

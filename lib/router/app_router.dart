@@ -12,6 +12,7 @@ import '../screens/checkout/checkout_screen.dart';
 import '../screens/checkout/order_success_screen.dart';
 import '../screens/checkout/payment_qr_screen.dart';
 import '../screens/checkout/payment_payos_screen.dart';
+import '../screens/checkout/payment_result_screen.dart';
 import '../screens/orders/order_history_screen.dart';
 import '../screens/orders/order_detail_screen.dart';
 import '../screens/orders/seller_order_screen.dart';
@@ -49,6 +50,7 @@ class AppRouter {
   static const String orderSuccess = '/order-success';
   static const String paymentQr = '/payment-qr';
   static const String paymentPayos = '/payment-payos';
+  static const String paymentResult = '/payment-result';
   static const String orderHistory = '/order-history';
   static const String orderDetail = '/order-detail';
   static const String sellerOrders = '/seller-orders';
@@ -99,6 +101,11 @@ class AppRouter {
       case paymentPayos:
         return SlideUpRoute(
           page: PaymentPayosScreen(orders: settings.arguments as List<OrderModel>),
+          settings: settings,
+        );
+      case paymentResult:
+        return FadeScaleRoute(
+          page: PaymentResultScreen(status: settings.arguments as String? ?? 'unknown'),
           settings: settings,
         );
       case orderHistory:

@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
+import 'package:app_links/app_links.dart';
 import 'firebase_options.dart';
 import 'core/theme/app_theme.dart';
 import 'router/app_router.dart';
@@ -85,12 +88,50 @@ void main() async {
   );
 }
 
-class AgriLinkApp extends StatelessWidget {
+class AgriLinkApp extends StatefulWidget {
   const AgriLinkApp({super.key});
+
+  @override
+  State<AgriLinkApp> createState() => _AgriLinkAppState();
+}
+
+class _AgriLinkAppState extends State<AgriLinkApp> {
+  final _navigatorKey = GlobalKey<NavigatorState>();
+  late final AppLinks _appLinks;
+  StreamSubscription<Uri>? _linkSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _appLinks = AppLinks();
+    _linkSubscription = _appLinks.uriLinkStream.listen(_handleDeepLink);
+  }
+
+  @override
+  void dispose() {
+    _linkSubscription?.cancel();
+    super.dispose();
+  }
+
+  // Deep link PayOS trả app về sau khi thanh toán: agrilink://payment-result?...
+  // Cold-start (app bị đóng hẳn, Android mở lại đúng lúc link này tới) khiến uriLinkStream
+  // emit link ngay khi subscribe — trước khi Navigator kịp mount. Đợi tới sau frame đầu
+  // tiên rồi mới điều hướng để tránh bị bỏ qua âm thầm.
+  void _handleDeepLink(Uri uri) {
+    if (uri.host != 'payment-result') return;
+    final status = uri.queryParameters['status'] ?? 'unknown';
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _navigatorKey.currentState?.pushNamed(
+        AppRouter.paymentResult,
+        arguments: status,
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: _navigatorKey,
       title: 'AgriLink',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,

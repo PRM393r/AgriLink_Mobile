@@ -8,7 +8,7 @@ class ApiConstants {
       ? '10.0.2.2'
       : 'localhost';
 
-  static String get baseUrl => 'http://$_host:5000/api/v1';
+  static String get baseUrl => 'http://$_host:5001/api/v1';
 
   // ── Auth ──────────────────────────────────────────────────────────────────
   static const String register = '/auth/register';

@@ -26,6 +26,17 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>vn.agrilink.payment</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>agrilink</string>
+			</array>
+		</dict>
+	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>AgriLink cần camera để quét mã QR truy xuất nguồn gốc sản phẩm.</string>
 	<key>UIApplicationSceneManifest</key>

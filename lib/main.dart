@@ -24,6 +24,7 @@ import 'data/services/market_price_service.dart';
 import 'data/providers/market_price_provider.dart';
 import 'data/services/trace_service.dart';
 import 'data/providers/trace_provider.dart';
+import 'data/repositories/admin_repository.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -81,6 +82,9 @@ void main() async {
         ),
         ProxyProvider<ApiService, ReviewService>(
           update: (_, api, __) => ReviewService(api),
+        ),
+        ProxyProvider<ApiService, AdminRepository>(
+          update: (_, api, __) => AdminRepository(api),
         ),
       ],
       child: const AgriLinkApp(),

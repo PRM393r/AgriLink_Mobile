@@ -110,6 +110,22 @@ class OrderRepository {
     }
   }
 
+  // Seller tự kiểm tra tài khoản ngân hàng rồi xác nhận thật đã nhận tiền (bank_transfer 2 chiều).
+  Future<OrderModel> confirmPaymentBySeller(String id) async {
+    try {
+      final response = await _apiService.patch(
+        '${ApiConstants.orders}/$id/payment-confirm-seller',
+      );
+      final data = response.data;
+      if (data is Map<String, dynamic> && data['data'] is Map<String, dynamic>) {
+        return OrderModel.fromJson(data['data'] as Map<String, dynamic>);
+      }
+      throw Exception('Xác nhận thanh toán thất bại');
+    } on DioException catch (e) {
+      throw Exception(e.error ?? 'Xác nhận thanh toán thất bại');
+    }
+  }
+
   Future<List<OrderModel>> getSellerOrders({String? status}) async {
     try {
       final params = <String, dynamic>{'role': 'seller', 'limit': 50};

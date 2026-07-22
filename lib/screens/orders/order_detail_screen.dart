@@ -97,6 +97,29 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     }
   }
 
+  Future<void> _confirmPaymentBySeller() async {
+    final order = _order;
+    if (order == null) return;
+    try {
+      final updated = await OrderRepository(ApiService()).confirmPaymentBySeller(order.id);
+      if (mounted) {
+        setState(() => _order = updated);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Đã xác nhận nhận được tiền')),
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error.toString().replaceFirst('Exception:', '').trim()),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _updateStatus(String status) async {
     final order = _order;
     if (order == null) return;
@@ -283,7 +306,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           ],
           if (isSeller) ...[
             const SizedBox(height: 16),
-            _SellerActions(order: order, onUpdate: _updateStatus),
+            _SellerActions(
+              order: order,
+              onUpdate: _updateStatus,
+              onConfirmPayment: _confirmPaymentBySeller,
+            ),
           ],
           const SizedBox(height: 32),
         ],
@@ -400,7 +427,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     switch (method) {
       case 'cod': return 'Tiền mặt khi nhận hàng';
       case 'bank_transfer': return 'Chuyển khoản ngân hàng';
-      case 'vnpay': case 'payos': return 'VNPay';
+      case 'payos': return 'PayOS';
       default: return method ?? '—';
     }
   }
@@ -408,6 +435,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   String _paymentStatusLabel(String status) {
     switch (status) {
       case 'paid': return 'Đã thanh toán';
+      case 'buyer_confirmed': return 'Chờ người bán xác nhận';
       case 'unpaid': return 'Chưa thanh toán';
       case 'refunded': return 'Đã hoàn tiền';
       default: return status;
@@ -421,15 +449,24 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 }
 
 class _SellerActions extends StatelessWidget {
-  const _SellerActions({required this.order, required this.onUpdate});
+  const _SellerActions({
+    required this.order,
+    required this.onUpdate,
+    required this.onConfirmPayment,
+  });
 
   final OrderModel order;
   final ValueChanged<String> onUpdate;
+  final VoidCallback onConfirmPayment;
 
   @override
   Widget build(BuildContext context) {
+    final showPaymentConfirm = order.paymentMethod == 'bank_transfer' &&
+        order.paymentStatus == 'buyer_confirmed' &&
+        order.status != 'cancelled';
+
     if (order.status == 'delivered' || order.status == 'cancelled') {
-      return const SizedBox.shrink();
+      return showPaymentConfirm ? _buildConfirmPaymentButton() : const SizedBox.shrink();
     }
 
     final nextStatus = switch (order.status) {
@@ -448,6 +485,10 @@ class _SellerActions extends StatelessWidget {
     };
 
     return Column(children: [
+      if (showPaymentConfirm) ...[
+        _buildConfirmPaymentButton(),
+        const SizedBox(height: 8),
+      ],
       if (nextStatus != null)
         SizedBox(
           width: double.infinity,
@@ -473,6 +514,18 @@ class _SellerActions extends StatelessWidget {
         ),
       ],
     ]);
+  }
+
+  Widget _buildConfirmPaymentButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: onConfirmPayment,
+        icon: const Icon(Icons.verified_outlined),
+        label: const Text('Xác nhận đã nhận được tiền'),
+        style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+      ),
+    );
   }
 }
 

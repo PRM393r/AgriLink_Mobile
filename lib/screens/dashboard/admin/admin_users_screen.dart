@@ -200,12 +200,12 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
             backgroundImage: (user['avatarUrl'] as String?)?.isNotEmpty == true
                 ? NetworkImage(user['avatarUrl'] as String)
                 : null,
-            child: (user['avatarUrl'] as String?)?.isNotEmpty != true
+            child: (user['fullName'] as String?)?.isNotEmpty == true
                 ? Text(
-                    (user['fullName'] as String? ?? '?').substring(0, 1).toUpperCase(),
+                    (user['fullName'] as String).substring(0, 1).toUpperCase(),
                     style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
                   )
-                : null,
+                : const Icon(Icons.person, color: AppColors.primary, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(

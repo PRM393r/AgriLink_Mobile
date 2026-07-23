@@ -389,7 +389,7 @@ class _LoginScreenState extends State<LoginScreen>
                                 label: 'Admin',
                                 icon: Icons.admin_panel_settings_outlined,
                                 color: const Color(0xFFDC2626),
-                                onTap: () => _quickLogin('admin1@agrilink.vn'),
+                                onTap: () => _quickLogin('admin@agrilink.vn'),
                               ),
                             ),
                             const SizedBox(height: 24),

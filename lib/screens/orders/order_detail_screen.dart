@@ -594,7 +594,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   Color _paymentStatusColor(String status) {
     switch (status) {
       case 'paid': return AppColors.accentActive;
-      case 'buyer_confirmed': return AppColors.warningDark;
+      case 'buyer_confirmed': return AppColors.warning;
       case 'unpaid': return AppColors.error;
       case 'refunded': return AppColors.muted;
       default: return AppColors.ink;

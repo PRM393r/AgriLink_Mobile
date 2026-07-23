@@ -564,7 +564,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
   Color _statusColor(String status) {
     switch (status) {
-      case 'pending': return AppColors.warningDark;
+      case 'pending': return AppColors.warning;
       case 'confirmed': case 'preparing': case 'handed_to_logistics': case 'shipping': return AppColors.primary;
       case 'delivered': return AppColors.accentActive;
       case 'cancelled': return AppColors.error;

@@ -382,6 +382,16 @@ class _LoginScreenState extends State<LoginScreen>
                                 ),
                               ],
                             ),
+                            const SizedBox(height: 8),
+                            SizedBox(
+                              width: double.infinity,
+                              child: _MockLoginButton(
+                                label: 'Admin',
+                                icon: Icons.admin_panel_settings_outlined,
+                                color: const Color(0xFFDC2626),
+                                onTap: () => _quickLogin('admin@agrilink.vn'),
+                              ),
+                            ),
                             const SizedBox(height: 24),
 
                             // Trust indicators

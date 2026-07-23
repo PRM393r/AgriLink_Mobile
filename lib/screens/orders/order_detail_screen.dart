@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../data/models/order_model.dart';
@@ -198,24 +199,59 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         (user.isFarmer || user.isSupplier) &&
         user.id == order.sellerId;
     final isBuyer = user != null && user.id == order.buyerId;
+    final fmt = DateFormat('dd/MM/yyyy HH:mm');
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          // Status timeline
+          // ── Banner trạng thái ──
           if (order.isCancelled)
             _buildCancelledBanner(order)
           else
             _buildStatusTimeline(order),
           const SizedBox(height: 12),
 
-          // Sản phẩm
+          // ── Thông tin chung ──
           _SectionCard(
-            title: 'Sản phẩm đặt mua',
+            title: 'Thông tin đơn hàng',
+            icon: Icons.receipt_long_outlined,
+            child: Column(
+              children: [
+                _InfoRow(label: 'Mã đơn hàng', value: '#${order.orderCode}', isBold: true),
+                _InfoRow(label: 'Mã đơn (ID)', value: order.id),
+                _InfoRow(label: 'Ngày đặt', value: fmt.format(order.createdAt)),
+                _InfoRow(label: 'Cập nhật lần cuối', value: fmt.format(order.updatedAt)),
+                if (order.sellerName != null && isBuyer)
+                  _InfoRow(label: 'Người bán', value: order.sellerName!),
+                if (order.buyerName != null && isSeller)
+                  _InfoRow(label: 'Người mua', value: order.buyerName!),
+                _InfoRow(label: 'Trạng thái xử lý', value: order.statusLabel,
+                    valueColor: _statusColor(order.status)),
+                if (order.note != null && order.note!.isNotEmpty)
+                  _InfoRow(label: 'Ghi chú', value: order.note!),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // ── Sản phẩm ──
+          _SectionCard(
+            title: 'Sản phẩm (${order.items.length})',
             icon: Icons.shopping_bag_outlined,
             child: Column(
               children: [
                 ...order.items.map((item) => _ItemRow(item: item)),
+                const Divider(height: 24),
+                _InfoRow(label: 'Tạm tính', value: '${_fmt(order.subtotal)} đ'),
+                _InfoRow(label: 'Phí vận chuyển', value: order.shippingFee == 0 ? 'Miễn phí' : '${_fmt(order.shippingFee)} đ'),
+                const Divider(height: 8),
+                _InfoRow(
+                  label: 'Tổng cộng',
+                  value: '${_fmt(order.totalAmount)} đ',
+                  isBold: true,
+                  valueColor: AppColors.accentActive,
+                ),
                 if (isBuyer && order.isDelivered) ...[
                   const SizedBox(height: 8),
                   const Divider(),
@@ -250,7 +286,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           ),
           const SizedBox(height: 12),
 
-          // Địa chỉ giao hàng
+          // ── Địa chỉ giao hàng ──
           if (order.shippingAddressSnapshot != null)
             _SectionCard(
               title: 'Địa chỉ giao hàng',
@@ -275,35 +311,41 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             ),
           const SizedBox(height: 12),
 
-          // Thanh toán
+          // ── Thanh toán ──
           _SectionCard(
             title: 'Thanh toán',
             icon: Icons.payment_outlined,
             child: Column(
               children: [
                 _InfoRow(label: 'Phương thức', value: _paymentLabel(order.paymentMethod)),
-                _InfoRow(label: 'Trạng thái TT', value: _paymentStatusLabel(order.paymentStatus)),
-                const Divider(height: 20),
-                _InfoRow(label: 'Tạm tính', value: '${_fmt(order.subtotal)} đ'),
-                _InfoRow(label: 'Phí vận chuyển', value: order.shippingFee == 0 ? 'Miễn phí' : '${_fmt(order.shippingFee)} đ'),
-                const Divider(height: 8),
-                _InfoRow(
-                  label: 'Tổng cộng',
-                  value: '${_fmt(order.totalAmount)} đ',
-                  isBold: true,
-                  valueColor: AppColors.accentActive,
-                ),
+                _InfoRow(label: 'Trạng thái TT', value: _paymentStatusLabel(order.paymentStatus),
+                    valueColor: _paymentStatusColor(order.paymentStatus)),
+                if (order.paymentMethod == 'payos') ...[
+                  const Divider(height: 16),
+                  _InfoRow(label: 'Cổng thanh toán', value: 'PayOS'),
+                  if (order.payosOrderCode != null)
+                    _InfoRow(label: 'Mã GD PayOS', value: '${order.payosOrderCode}'),
+                  if (order.payosPaymentLinkId != null && order.payosPaymentLinkId!.isNotEmpty)
+                    _InfoRow(label: 'Payment Link ID', value: order.payosPaymentLinkId!),
+                ],
+                if (order.paymentMethod == 'bank_transfer' && order.paymentRecipient != null) ...[
+                  const Divider(height: 16),
+                  _buildBankTransferInfo(order.paymentRecipient!),
+                ],
               ],
             ),
           ),
-          if (order.note != null && order.note!.isNotEmpty) ...[
-            const SizedBox(height: 12),
+          const SizedBox(height: 12),
+
+          // ── Lịch sử trạng thái ──
+          if (order.statusHistory.isNotEmpty)
             _SectionCard(
-              title: 'Ghi chú',
-              icon: Icons.note_outlined,
-              child: Text(order.note!, style: AppTextStyles.body.copyWith(fontSize: 14)),
+              title: 'Lịch sử trạng thái',
+              icon: Icons.timeline_outlined,
+              child: _buildStatusHistory(order),
             ),
-          ],
+
+          // ── Seller actions ──
           if (isSeller) ...[
             const SizedBox(height: 16),
             _SellerActions(
@@ -318,6 +360,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
   }
 
+  // ── Status timeline top banner ──
   Widget _buildStatusTimeline(OrderModel order) {
     final steps = [
       {'key': 'pending', 'label': 'Đặt hàng'},
@@ -414,6 +457,88 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
   }
 
+  Widget _buildBankTransferInfo(Map<String, dynamic> recipient) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Thông tin tài khoản nhận tiền',
+            style: AppTextStyles.caption.copyWith(fontWeight: FontWeight.bold, color: AppColors.ink)),
+        const SizedBox(height: 8),
+        if (recipient['bankName'] != null)
+          _InfoRow(label: 'Ngân hàng', value: recipient['bankName'] as String),
+        if (recipient['accountNumber'] != null)
+          _InfoRow(label: 'Số tài khoản', value: recipient['accountNumber'] as String),
+        if (recipient['accountHolder'] != null)
+          _InfoRow(label: 'Chủ tài khoản', value: recipient['accountHolder'] as String),
+        if (recipient['qrCode'] != null && (recipient['qrCode'] as String).isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.network(
+                recipient['qrCode'] as String,
+                height: 180,
+                fit: BoxFit.contain,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildStatusHistory(OrderModel order) {
+    final fmt = DateFormat('dd/MM/yyyy HH:mm');
+    return Column(
+      children: List.generate(order.statusHistory.length, (i) {
+        final entry = order.statusHistory[i];
+        final isLast = i == order.statusHistory.length - 1;
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Timeline dot + line
+            Column(
+              children: [
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: i == 0 ? AppColors.primary : AppColors.muted,
+                  ),
+                ),
+                if (!isLast)
+                  Container(
+                    width: 2,
+                    height: 32,
+                    color: AppColors.primaryUltraLight,
+                  ),
+              ],
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(bottom: isLast ? 0 : 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(_statusVn(entry.status),
+                        style: AppTextStyles.caption.copyWith(
+                            fontWeight: FontWeight.w600, color: AppColors.ink)),
+                    Text(fmt.format(entry.changedAt),
+                        style: AppTextStyles.caption.copyWith(
+                            color: AppColors.muted, fontSize: 11)),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      }),
+    );
+  }
+
+  // ── Helpers ──
+
   int _statusIndex(String status) {
     switch (status) {
       case 'confirmed': case 'preparing': return 1;
@@ -423,11 +548,35 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     }
   }
 
+  String _statusVn(String s) {
+    switch (s) {
+      case 'pending': return 'Chờ xác nhận';
+      case 'confirmed': return 'Đã xác nhận';
+      case 'preparing': return 'Đang chuẩn bị hàng';
+      case 'handed_to_logistics': return 'Đã giao vận chuyển';
+      case 'shipping': return 'Đang giao hàng';
+      case 'delivered': return 'Đã giao hàng';
+      case 'cancelled': return 'Đã hủy';
+      case 'disputed': return 'Tranh chấp';
+      default: return s;
+    }
+  }
+
+  Color _statusColor(String status) {
+    switch (status) {
+      case 'pending': return AppColors.warningDark;
+      case 'confirmed': case 'preparing': case 'handed_to_logistics': case 'shipping': return AppColors.primary;
+      case 'delivered': return AppColors.accentActive;
+      case 'cancelled': return AppColors.error;
+      default: return AppColors.ink;
+    }
+  }
+
   String _paymentLabel(String? method) {
     switch (method) {
-      case 'cod': return 'Tiền mặt khi nhận hàng';
+      case 'cod': return 'Tiền mặt khi nhận hàng (COD)';
       case 'bank_transfer': return 'Chuyển khoản ngân hàng';
-      case 'payos': return 'PayOS';
+      case 'payos': return 'PayOS — Ví điện tử';
       default: return method ?? '—';
     }
   }
@@ -439,6 +588,16 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       case 'unpaid': return 'Chưa thanh toán';
       case 'refunded': return 'Đã hoàn tiền';
       default: return status;
+    }
+  }
+
+  Color _paymentStatusColor(String status) {
+    switch (status) {
+      case 'paid': return AppColors.accentActive;
+      case 'buyer_confirmed': return AppColors.warningDark;
+      case 'unpaid': return AppColors.error;
+      case 'refunded': return AppColors.muted;
+      default: return AppColors.ink;
     }
   }
 
@@ -587,7 +746,7 @@ class _ItemRow extends StatelessWidget {
                 style: AppTextStyles.caption.copyWith(color: AppColors.ink, fontWeight: FontWeight.w600),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis),
-            Text('x${item.quantity.toInt()} ${item.productUnit}',
+            Text('x${item.quantity.toInt()} ${item.productUnit} · ${_fmt(item.unitPrice)} đ/${item.productUnit}',
                 style: AppTextStyles.caption),
           ]),
         ),
@@ -597,6 +756,11 @@ class _ItemRow extends StatelessWidget {
       ]),
     );
   }
+
+  String _fmt(double v) => v.toStringAsFixed(0).replaceAllMapped(
+        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+        (m) => '${m[1]}.',
+      );
 }
 
 class _InfoRow extends StatelessWidget {

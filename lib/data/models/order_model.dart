@@ -15,7 +15,9 @@ class OrderModel {
   final String id;
   final String orderCode;
   final String buyerId;
+  final String? buyerName;
   final String sellerId;
+  final String? sellerName;
   final String status;
   final double subtotal;
   final double shippingFee;
@@ -29,6 +31,8 @@ class OrderModel {
   final List<OrderItemModel> items;
   final Map<String, dynamic>? shippingAddressSnapshot;
   final List<StatusHistoryEntry> statusHistory;
+  final int? payosOrderCode;
+  final String? payosPaymentLinkId;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -36,7 +40,9 @@ class OrderModel {
     required this.id,
     required this.orderCode,
     required this.buyerId,
+    this.buyerName,
     required this.sellerId,
+    this.sellerName,
     required this.status,
     required this.subtotal,
     required this.shippingFee,
@@ -50,16 +56,22 @@ class OrderModel {
     required this.items,
     this.shippingAddressSnapshot,
     this.statusHistory = const [],
+    this.payosOrderCode,
+    this.payosPaymentLinkId,
     required this.createdAt,
     required this.updatedAt,
   });
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {
+    final buyer = json['buyerId'];
+    final seller = json['sellerId'];
     return OrderModel(
       id: (json['_id'] ?? json['id'])?.toString() ?? '',
       orderCode: json['orderCode'] as String? ?? '',
-      buyerId: (json['buyerId'] is Map ? json['buyerId']['_id'] : json['buyerId'])?.toString() ?? '',
-      sellerId: (json['sellerId'] is Map ? json['sellerId']['_id'] : json['sellerId'])?.toString() ?? '',
+      buyerId: (buyer is Map ? buyer['_id'] : buyer)?.toString() ?? '',
+      buyerName: buyer is Map ? (buyer['fullName'] ?? buyer['name'] ?? buyer['email'])?.toString() : null,
+      sellerId: (seller is Map ? seller['_id'] : seller)?.toString() ?? '',
+      sellerName: seller is Map ? (seller['fullName'] ?? seller['name'] ?? seller['email'])?.toString() : null,
       status: json['status'] as String? ?? 'pending',
       subtotal: (json['subtotal'] as num?)?.toDouble() ?? 0.0,
       shippingFee: (json['shippingFee'] as num?)?.toDouble() ?? 0.0,
@@ -81,6 +93,8 @@ class OrderModel {
               ?.map((e) => StatusHistoryEntry.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const [],
+      payosOrderCode: (json['payosOrderCode'] as num?)?.toInt(),
+      payosPaymentLinkId: json['payosPaymentLinkId'] as String?,
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'] as String) ?? DateTime.now()
           : DateTime.now(),

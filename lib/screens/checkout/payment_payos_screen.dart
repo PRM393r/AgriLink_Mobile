@@ -55,9 +55,12 @@ class _PaymentPayosScreenState extends State<PaymentPayosScreen> {
     try {
       final repo = context.read<OrderRepository>();
       final status = await repo.getPayosPaymentStatus(_order.id);
+      debugPrint('[PayOS poll] orderId=${_order.id} status=$status');
       if (!mounted || _paymentCompleted) return;
       if (status == 'paid') await _onPaymentPaid();
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[PayOS poll] ERROR: $e');
+    }
   }
 
   Future<void> _createLink() async {
@@ -96,9 +99,14 @@ class _PaymentPayosScreenState extends State<PaymentPayosScreen> {
       ..setNavigationDelegate(NavigationDelegate(
         onNavigationRequest: (request) {
           final u = request.url;
+          debugPrint('[PayOS WebView] nav request: $u');
           // PayOS redirect về returnUrl hoặc cancelUrl — tự đóng WebView
-          if (u.contains('payment/success') || u.contains('payment/cancel')) {
+          final isSuccess = u.contains('payment/success') || u.contains('/success?') || u.contains('status=PAID');
+          final isCancel = u.contains('payment/cancel') || u.contains('status=cancel');
+          if (isSuccess || isCancel) {
+            debugPrint('[PayOS WebView] intercept redirect -> close');
             setState(() => _showWebView = false);
+            if (isSuccess) _pollStatus();
             return NavigationDecision.prevent;
           }
           return NavigationDecision.navigate;

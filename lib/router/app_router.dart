@@ -6,13 +6,13 @@ import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
 import '../screens/auth/verify_email_screen.dart';
 import '../screens/auth/role_picker_screen.dart';
+import '../screens/auth/seller_pending_screen.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/cart/cart_screen.dart';
 import '../screens/checkout/checkout_screen.dart';
 import '../screens/checkout/order_success_screen.dart';
 import '../screens/checkout/payment_qr_screen.dart';
 import '../screens/checkout/payment_payos_screen.dart';
-import '../screens/checkout/payment_result_screen.dart';
 import '../screens/orders/order_history_screen.dart';
 import '../screens/orders/order_detail_screen.dart';
 import '../screens/orders/seller_order_screen.dart';
@@ -35,6 +35,13 @@ import '../screens/prices/prices_screen.dart';
 import '../screens/trace/trace_screen.dart';
 import '../screens/trace/qr_scanner_screen.dart';
 import '../screens/trace/trace_detail_screen.dart';
+import '../screens/dashboard/admin/admin_dashboard_screen.dart';
+import '../screens/dashboard/admin/admin_users_screen.dart';
+import '../screens/dashboard/admin/admin_broadcast_screen.dart';
+import '../screens/dashboard/admin/admin_pending_sellers_screen.dart';
+import '../screens/dashboard/admin/admin_products_screen.dart';
+import '../screens/dashboard/admin/admin_disputes_screen.dart';
+import '../screens/dashboard/admin/admin_audit_log_screen.dart';
 
 class AppRouter {
   const AppRouter._();
@@ -44,13 +51,13 @@ class AppRouter {
   static const String register = '/register';
   static const String verifyEmail = '/verify-email';
   static const String rolePicker = '/role-picker';
+  static const String sellerPending = '/seller-pending';
   static const String home = '/home';
   static const String cart = '/cart';
   static const String checkout = '/checkout';
   static const String orderSuccess = '/order-success';
   static const String paymentQr = '/payment-qr';
   static const String paymentPayos = '/payment-payos';
-  static const String paymentResult = '/payment-result';
   static const String orderHistory = '/order-history';
   static const String orderDetail = '/order-detail';
   static const String sellerOrders = '/seller-orders';
@@ -72,6 +79,13 @@ class AppRouter {
   static const String trace = '/trace';
   static const String qrScanner = '/trace/scanner';
   static const String traceDetail = '/trace/detail';
+  static const String adminDashboard = '/admin/dashboard';
+  static const String adminUsers = '/admin/users';
+  static const String adminBroadcast = '/admin/broadcast';
+  static const String adminPendingSellers = '/admin/sellers/pending';
+  static const String adminProducts = '/admin/products';
+  static const String adminDisputes = '/admin/disputes';
+  static const String adminAuditLog = '/admin/audit-log';
 
   static Route<dynamic>? onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -85,6 +99,8 @@ class AppRouter {
         return SlideRoute(page: const VerifyEmailScreen(), settings: settings);
       case rolePicker:
         return FadeScaleRoute(page: const RolePickerScreen(), settings: settings);
+      case sellerPending:
+        return FadeScaleRoute(page: const SellerPendingScreen(), settings: settings);
       case home:
         return FadeScaleRoute(page: const HomeScreen(), settings: settings);
       case cart:
@@ -101,11 +117,6 @@ class AppRouter {
       case paymentPayos:
         return SlideUpRoute(
           page: PaymentPayosScreen(orders: settings.arguments as List<OrderModel>),
-          settings: settings,
-        );
-      case paymentResult:
-        return FadeScaleRoute(
-          page: PaymentResultScreen(status: settings.arguments as String? ?? 'unknown'),
           settings: settings,
         );
       case orderHistory:
@@ -158,6 +169,20 @@ class AppRouter {
         return SlideUpRoute(page: const QrScannerScreen(), settings: settings);
       case traceDetail:
         return SlideRoute(page: const TraceDetailScreen(), settings: settings);
+      case adminDashboard:
+        return FadeScaleRoute(page: const AdminDashboardScreen(), settings: settings);
+      case adminUsers:
+        return SlideRoute(page: const AdminUsersScreen(), settings: settings);
+      case adminBroadcast:
+        return SlideUpRoute(page: const AdminBroadcastScreen(), settings: settings);
+      case adminPendingSellers:
+        return SlideRoute(page: const AdminPendingSellersScreen(), settings: settings);
+      case adminProducts:
+        return SlideRoute(page: const AdminProductsScreen(), settings: settings);
+      case adminDisputes:
+        return SlideRoute(page: const AdminDisputesScreen(), settings: settings);
+      case adminAuditLog:
+        return SlideRoute(page: const AdminAuditLogScreen(), settings: settings);
       default:
         return MaterialPageRoute(
           builder: (_) => Scaffold(

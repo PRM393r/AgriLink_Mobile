@@ -35,6 +35,7 @@ class UserModel {
   final String? address;
   final bool isVerified;
   final BankInfoModel bankInfo;
+  final String sellerApprovalStatus; // 'approved' | 'pending' | 'rejected' — chỉ áp dụng farmer/supplier
 
   const UserModel({
     required this.id,
@@ -46,12 +47,16 @@ class UserModel {
     this.address,
     this.isVerified = false,
     this.bankInfo = const BankInfoModel(),
+    this.sellerApprovalStatus = 'approved',
   });
 
   bool get isFarmer   => role == 'farmer';
   bool get isSupplier => role == 'supplier';
   bool get isCustomer => role == 'customer';
-  bool get isValidRole => isFarmer || isSupplier || isCustomer;
+  bool get isAdmin    => role == 'admin';
+  bool get isSellerPendingApproval => (isFarmer || isSupplier) && sellerApprovalStatus == 'pending';
+  bool get isSellerRejected => (isFarmer || isSupplier) && sellerApprovalStatus == 'rejected';
+  bool get isValidRole => isFarmer || isSupplier || isCustomer || isAdmin;
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     // MongoDB trả '_id', backend cũ trả 'id'
@@ -72,6 +77,7 @@ class UserModel {
             ? Map<String, dynamic>.from(json['bankInfo'] as Map)
             : null,
       ),
+      sellerApprovalStatus: json['sellerApprovalStatus'] as String? ?? 'approved',
     );
   }
 
@@ -85,6 +91,7 @@ class UserModel {
     'address':    address,
     'isVerified': isVerified,
     'bankInfo': bankInfo.toJson(),
+    'sellerApprovalStatus': sellerApprovalStatus,
   };
 
   UserModel copyWith({
@@ -97,6 +104,7 @@ class UserModel {
     String?  address,
     bool?    isVerified,
     BankInfoModel? bankInfo,
+    String?  sellerApprovalStatus,
   }) => UserModel(
     id:         id         ?? this.id,
     fullName:   fullName   ?? this.fullName,
@@ -107,5 +115,6 @@ class UserModel {
     address:    address    ?? this.address,
     isVerified: isVerified ?? this.isVerified,
     bankInfo: bankInfo ?? this.bankInfo,
+    sellerApprovalStatus: sellerApprovalStatus ?? this.sellerApprovalStatus,
   );
 }

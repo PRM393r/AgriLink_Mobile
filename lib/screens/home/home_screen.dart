@@ -9,6 +9,9 @@ import '../../data/providers/wishlist_provider.dart';
 import '../dashboard/farmer/farmer_dashboard_screen.dart';
 import '../dashboard/supplier/supplier_dashboard_screen.dart';
 import '../dashboard/customer/customer_dashboard_screen.dart';
+import '../dashboard/admin/admin_dashboard_screen.dart';
+import '../dashboard/admin/admin_users_screen.dart';
+import '../dashboard/admin/admin_broadcast_screen.dart';
 import '../marketplace/marketplace_screen.dart';
 import '../cart/cart_screen.dart';
 import '../orders/order_history_screen.dart';
@@ -42,6 +45,16 @@ class _HomeScreenState extends State<HomeScreen> {
         Navigator.pushNamedAndRemoveUntil(
           context,
           AppRouter.rolePicker,
+          (route) => false,
+        );
+        return;
+      }
+      // Farmer/supplier chưa được admin duyệt (hoặc bị từ chối) không được vào dashboard bán hàng.
+      final user = auth.currentUser;
+      if (user != null && (user.isSellerPendingApproval || user.isSellerRejected)) {
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRouter.sellerPending,
           (route) => false,
         );
         return;
@@ -109,6 +122,36 @@ class _HomeScreenState extends State<HomeScreen> {
           icon: Icons.receipt_long_outlined,
           activeIcon: Icons.receipt_long_rounded,
           label: 'Đơn hàng',
+        ),
+        const _NavItem(
+          icon: Icons.person_outline_rounded,
+          activeIcon: Icons.person_rounded,
+          label: 'Tài khoản',
+        ),
+      ]);
+    } else if (role == 'admin') {
+      screens.addAll([
+        const AdminDashboardScreen(),
+        const AdminUsersScreen(),
+        const AdminBroadcastScreen(),
+        const ProfileScreen(),
+      ]);
+
+      navItems.addAll([
+        const _NavItem(
+          icon: Icons.dashboard_outlined,
+          activeIcon: Icons.dashboard_rounded,
+          label: 'Tổng quan',
+        ),
+        const _NavItem(
+          icon: Icons.manage_accounts_outlined,
+          activeIcon: Icons.manage_accounts_rounded,
+          label: 'Người dùng',
+        ),
+        const _NavItem(
+          icon: Icons.campaign_outlined,
+          activeIcon: Icons.campaign_rounded,
+          label: 'Thông báo',
         ),
         const _NavItem(
           icon: Icons.person_outline_rounded,
